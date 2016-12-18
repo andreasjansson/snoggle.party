@@ -45,7 +45,7 @@
         <h3>Options</h3>
         <p>Turn time seconds</p>
         <div class="options">
-          {% for option in [5, 10, 20, 30, 60] %}
+          {% for option in [5, 10, 20, 40] %}
           <a href="/options?turn-time={{ option }}" {% if option == turn_time_total %}class="selected"{% endif %}>{{ option }}</a>
           {% endfor %}
         </div>

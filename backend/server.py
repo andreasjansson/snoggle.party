@@ -164,7 +164,7 @@ def options(game, player):
 
     if 'turn-time' in args:
         turn_time = int(args['turn-time'])
-        if turn_time in [5, 10, 20, 30, 60]:
+        if turn_time in [5, 10, 20, 40]:
             game.max_turn_time = turn_time
             session['turn_time'] = turn_time
         else:
