@@ -1,0 +1,73 @@
+<div class="row" id="word-row">
+
+  <div class="col-sm-11 col-xs-8 col-xs-offset-2 col-sm-offset-0">
+    <div data-time-left="{{ turn_time_left }}"
+         data-total-time="{{ turn_time_total }}"
+         style="background-color: {{ color_map[turn.color] }};
+                width: {{ turn_time_percent }}%"
+         id="countdown"></div>
+    <p class="word-input" id="your-word">
+      {% if is_players_turn %}
+
+      {% if player.is_guessing %}
+      {{ player.guess.letters() | upper }}
+      {% else %}
+      {{ player.word.letters() | upper }}
+      {% endif %}
+
+      {% else %}
+
+      <em>wait...</em>
+
+      {% endif %}
+    </p>
+  </div>
+  <div class="col-sm-1 col-xs-2" id="submit">
+    <form action="/submit" method="POST">
+      {% if is_players_turn %}
+      <button name="submit" value="submit"
+              {% if word_length == 0 %}
+              disabled="disabled"
+              {% endif %}>
+        {% if player.is_guessing %}
+        <img src="/images/thinking.png" alt="Submit guess!" />
+        {% else %}
+        <img src="/images/rocket.png" alt="Submit word!" />
+        {% endif %}
+      </button>
+      {% else %}
+      <button disabled="disabled" name="submit" value="submit">
+        <img src="/images/rocket-disabled.png" />
+      </button>
+      {% endif %}
+    </form>
+  </div>
+
+</div>
+
+
+{% if is_players_turn %}
+
+<div class="row" id="controls">
+  <div class="col-sm-11 col-xs-8 col-xs-offset-2 col-sm-offset-0">
+    <div class="col-xs-4">
+      {% if not player.is_guessing %}
+      <a href="/start-guessing">
+        <img src="/images/thinking.png" alt="Start guessing" />
+      </a>
+      {% endif %}
+    </div>
+    <div class="col-xs-4">
+      <a href="/clear">
+        <img src="/images/clear.png" alt="Clear word" />
+      </a>
+    </div>
+    <div class="col-xs-4">
+      <a href="/pass">
+        <img src="/images/pass.png" alt="Pass turn" />
+      </a>
+    </div>
+  </div>
+</div>
+
+{% endif %}

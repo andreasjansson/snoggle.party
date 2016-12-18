@@ -1,0 +1,14 @@
+<ul>
+  {% for result in results %}
+  <li>
+    <span style="color: {{ color_map[result.color] }}">{{ result.color }}</span> - {{ result.score }} points
+    <ul>
+      {% for word in result.words %}
+      <li><span class="result-word">{{ word.letters() | upper }}</span> - {{ word.score() }} points</li>
+      {% endfor %}
+    </ul>
+  </li>
+  {% endfor %}
+</ul>
+
+<p><a href="/next-round">Play another round!</a></p>

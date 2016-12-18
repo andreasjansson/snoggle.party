@@ -1,0 +1,7 @@
+                <form action="/submit-guess" method="POST">
+                  <label for="word">Guess their word!</label>
+                  <input type="text" id="guessed-word" name="word" />
+                  {% for color in other_colors %}
+                  <button style="background-color: {{ color_map[color] }}" type="submit" name="color" value="{{ color }}">{{ color | capitalize }}</button>
+                  {% endfor %}
+                </form>

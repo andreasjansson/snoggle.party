@@ -1,0 +1,51 @@
+{% include "header.html" %}
+
+<style>
+  body {
+  background-image: url("images/background-wait.jpg");
+  }
+</style>
+
+    {% if error %}
+    <p id="error">{{ error }}</p>
+    {% endif %}
+
+    <div class="container">
+      <div class="row">
+        <div class="col-xs-8">
+          <h1><img src="images/logo.png" alt="Snoggle" id="logo" /></h1>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-xs-12">
+          <h2>Waiting for others to join...</h2>
+        </div>
+      </div>
+
+      <div id="wrapper">
+        <p>Game ID: {{ game_id }}</p>
+        <p>Players:</p>
+        <ul>
+          {% for player in players %}
+          <li style="color: {{ color_map[player.color] }}">{{ player.color }}</li>
+          {% endfor %}
+        </ul>
+        {% if num_players > 1 %}
+        <form action="/start" method="POST">
+          <button type="submit" id="start-game" name="start" value="start">Start game!</button>
+        </form>
+        {% endif %}
+        <p><a href="/quit">Quit</a></p>
+      </div>
+
+    </div>
+
+    <!-- TODO: add AI -->
+
+    {% include "javascripts.html" %}
+    <script type="text/javascript">
+      $(wait());
+    </script>
+
+  </body>
+</html>

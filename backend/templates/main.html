@@ -1,0 +1,55 @@
+{% include "header.html" %}
+
+<div id="wrapper">
+  <div class="container">
+
+    <div class="row">
+      <div class="col-sm-5 col-xs-5">
+        <h1><img src="images/logo.png" alt="Snoggle" id="logo" /></h1>
+      </div>
+    </div>
+
+    {% if message %}
+    <p id="{{ message.type }}">{{ message.text }}</p>
+    {% endif %}
+
+    <div class="row">
+
+      <div id="board" class="col-sm-4 col-xs-8 col-xs-offset-2 col-sm-offset-0 col-sm-push-4">
+        {% include "board.html" %}
+      </div>
+
+      <div class="col-xs-12 col-sm-4 col-sm-pull-4">
+        {% if ended %}
+        {% include "results.html" %}
+        {% else %}
+        {% include "inputs.html" %}
+        {% endif %}
+      </div>
+
+      <div class="col-xs-12 col-sm-4">
+        <ul>
+          {% for player in players %}
+          <li><span style="color: {{ color_map[player.color] }}">{{ player.color }}</span> - {{ player.wins }} wins, {{ player.score }} points</li>
+          {% endfor %}
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="row">
+      <div class="col-xs-12 clearfix">
+        <a href="/quit">Quit game</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include "javascripts.html" %}
+
+<script type="text/javascript">
+  $(main());
+</script>
+
+</body>
+</html>
