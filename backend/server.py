@@ -1,5 +1,6 @@
 #todo:
-# bail / lose single game
+# * ai
+# * 5x5
 
 from collections import OrderedDict
 import datetime
@@ -10,7 +11,7 @@ from flask import (
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import logging
 
-from game import Game, MAX_TURN_TIME
+from game import Game
 import dictionary
 from timer import ResettableTimer
 
@@ -32,7 +33,7 @@ socketio.logger = True
 games = {}
 
 
-def require_game(started=True, emit=False, turn=False, playing=False):
+def require_game(started=True, emit=None, turn=False, playing=False):
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
@@ -61,7 +62,7 @@ def require_game(started=True, emit=False, turn=False, playing=False):
                 return f(game, player, *args, **kwargs)
             finally:
                 if emit and game:
-                    broadcast_emit_game(game)
+                    broadcast_emit_game(game, template=emit)
 
         return wrapper
     return decorator
@@ -116,23 +117,29 @@ def join():
             return redirect(url_for('index'))
 
         game = games[game_id]
+
     else:
         game = Game(game_id)
-        game.timer = ResettableTimer(MAX_TURN_TIME, turn_time_out, (game, ))
+        game.timer = ResettableTimer(
+            game.max_turn_time, turn_time_out, (game, ))
 
         games[game_id] = game
+
+        if 'turn_time' in session:
+            game.max_turn_time = session['turn_time']
+
+        if 'num_turns' in session:
+            game.num_turns = session['num_turns']
+
+        if 'board_width' in session:
+            game.width = session['board_width']
 
     game.add_player(color)
 
     session['color'] = color
     session['game_id'] = game_id
 
-    for p in game.players.values():
-        if p.sid:
-            socketio.emit('player joined', {
-                'html': render_template(
-                    'wait.html', **game_state(game, p))
-                }, room=p.sid)
+    broadcast_emit_game(game, 'wait')
 
     return redirect(url_for('wait'))
 
@@ -140,12 +147,46 @@ def join():
 @app.route('/wait', methods=['GET', 'POST'])
 @require_game(False)
 def wait(game, player):
-    state = game_state(game, player)
-
     if game.started():
         return redirect(url_for('main'))
 
+    state = game_state(game, player)
     return render_template('wait.html', **state)
+
+
+@app.route('/options', methods=['GET'])
+@require_game(False, emit='wait')
+def options(game, player):
+    if game.started():
+        return redirect(url_for('main'))
+
+    args = request.args
+
+    if 'turn-time' in args:
+        turn_time = int(args['turn-time'])
+        if turn_time in [5, 10, 20, 30, 60]:
+            game.max_turn_time = turn_time
+            session['turn_time'] = turn_time
+        else:
+            player.error = 'Invalid turn time'
+
+    if 'num-turns' in args:
+        num_turns = int(args['num-turns'])
+        if num_turns in [1, 2, 3, 4, 5]:
+            game.num_turns = num_turns
+            session['num_turns'] = num_turns
+        else:
+            player.error = 'Invalid num turns'
+
+    if 'board-width' in args:
+        board_width = int(args['board-width'])
+        if board_width in [4, 5]:
+            game.width = board_width
+            session['board_width'] = board_width
+        else:
+            player.error = 'Invalid board width'
+
+    return redirect(url_for('wait'))
 
 
 @app.route('/start', methods=['POST'])
@@ -166,12 +207,16 @@ def start(game, player):
 @app.route('/game', methods=['GET', 'POST'])
 @require_game()
 def main(game, player):
+    session['turn_time'] = game.max_turn_time
+    session['num_turns'] = game.num_turns
+    session['board_width'] = game.width
+
     state = game_state(game, player)
     return render_template('main.html', **state)
 
 
 @app.route('/select', methods=['POST'])
-@require_game(emit=True, turn=True, playing=True)
+@require_game(emit='main', turn=True, playing=True)
 def select(game, player):
     x, y = request.form['position'].split('|')[1].split(',')
     x, y = int(x), int(y)
@@ -198,7 +243,7 @@ def select(game, player):
 
 
 @app.route('/submit', methods=['POST'])
-@require_game(emit=True, turn=True, playing=True)
+@require_game(emit='main', turn=True, playing=True)
 def submit(game, player):
     if len(player.guess if player.is_guessing else player.word) == 0:
         player.error = 'You have\'t made a word yet'
@@ -209,7 +254,7 @@ def submit(game, player):
 
 
 @app.route('/start-guessing')
-@require_game(emit=True, turn=True, playing=True)
+@require_game(emit='main', turn=True, playing=True)
 def start_guessing(game, player):
     player.start_guessing()
 
@@ -217,7 +262,7 @@ def start_guessing(game, player):
 
 
 @app.route('/clear')
-@require_game(emit=True, turn=True, playing=True)
+@require_game(emit='main', turn=True, playing=True)
 def clear(game, player):
     if player.is_guessing:
         player.clear_guess()
@@ -228,7 +273,7 @@ def clear(game, player):
 
 
 @app.route('/pass')
-@require_game(emit=True, turn=True, playing=True)
+@require_game(emit='main', turn=True, playing=True)
 def pass_turn(game, player):
     player.clear_word()
     game.next_turn()
@@ -236,15 +281,14 @@ def pass_turn(game, player):
 
 
 @app.route('/next-round')
-@require_game()
+@require_game(emit='main')
 def next_round(game, player):
     game.start_round()
-    broadcast_emit_game(game)
     return redirect(url_for('main'))
 
 
 @app.route('/quit')
-@require_game(emit=True, started=False)
+@require_game(started=False)
 def quit_game(game, player):
     game.end()
     del games[game.game_id]
@@ -324,15 +368,15 @@ def turn_time_out(game):
     game.next_turn()
 
     with app.app_context():
-        broadcast_emit_game(game)
+        broadcast_emit_game(game, 'main')
 
 
-def broadcast_emit_game(game):
+def broadcast_emit_game(game, template):
     for p in game.players.values():
         if p.sid:
             socketio.emit('game updated', {
                 'html': render_template(
-                    'main.html', **game_state(game, p))
+                    '%s.html' % template, **game_state(game, p))
                 }, room=p.sid)
 
 
@@ -361,8 +405,12 @@ def game_state(game, player):
         'message': player.pop_message(),
         'color_map': COLOR_MAP,
         'turn_time_left': '%.1f' % game.turn_time_left(),
-        'turn_time_percent': int(100 * game.turn_time_left() / MAX_TURN_TIME),
-        'turn_time_total': MAX_TURN_TIME,
+        'turn_time_percent': round(100.0 * game.turn_time_left() /
+                                   game.max_turn_time, 2),
+        'turn_time_total': game.max_turn_time,
+        'board_width': game.width,
+        'num_turns': game.num_turns,
+        'dice_width_percent': round(100.0 / game.width, 2),
     }
 
 

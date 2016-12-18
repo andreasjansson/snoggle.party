@@ -6,46 +6,75 @@
   }
 </style>
 
-    {% if error %}
-    <p id="error">{{ error }}</p>
-    {% endif %}
+{% if error %}
+<p id="error">{{ error }}</p>
+{% endif %}
 
-    <div class="container">
-      <div class="row">
-        <div class="col-xs-8">
-          <h1><img src="images/logo.png" alt="Snoggle" id="logo" /></h1>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-xs-12">
-          <h2>Waiting for others to join...</h2>
-        </div>
-      </div>
+<div class="container">
+  <div class="row">
+    <div class="col-xs-8">
+      <h1><img src="images/logo.png" alt="Snoggle" id="logo" /></h1>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-xs-12">
+      <h2>Waiting for others to join...</h2>
+    </div>
+  </div>
 
-      <div id="wrapper">
-        <p>Game ID: {{ game_id }}</p>
+  <div id="wrapper">
+    <div class="row">
+      <div class="col-sm-4 col-xs-12">
+        <h3>Game ID: {{ game_id }}</h3>
         <p>Players:</p>
         <ul>
           {% for player in players %}
           <li style="color: {{ color_map[player.color] }}">{{ player.color }}</li>
           {% endfor %}
         </ul>
+
         {% if num_players > 1 %}
         <form action="/start" method="POST">
           <button type="submit" id="start-game" name="start" value="start">Start game!</button>
         </form>
         {% endif %}
-        <p><a href="/quit">Quit</a></p>
+
       </div>
 
+      <div class="col-sm-8 col-xs-12">
+        <h3>Options</h3>
+        <p>Turn time seconds</p>
+        <div class="options">
+          {% for option in [5, 10, 20, 30, 60] %}
+          <a href="/options?turn-time={{ option }}" {% if option == turn_time_total %}class="selected"{% endif %}>{{ option }}</a>
+          {% endfor %}
+        </div>
+        <p>Turns per player</p>
+        <div class="options">
+          {% for option in [1, 2, 3, 4, 5] %}
+          <a href="/options?num-turns={{ option }}" {% if option == num_turns %}class="selected"{% endif  %}>{{ option }}</a>
+          {% endfor %}
+        </div>
+        <p>Board width</p>
+        <div class="options">
+          {% for option in [4, 5] %}
+          <a href="/options?board-width={{ option }}" {% if option == board_width %}class="selected"{% endif  %}>{{ option }}</a>
+          {% endfor %}
+        </div>
+      </div>
     </div>
+  </div>
 
-    <!-- TODO: add AI -->
+  {% include "footer.html" %}
 
-    {% include "javascripts.html" %}
-    <script type="text/javascript">
-      $(wait());
-    </script>
+</div>
 
-  </body>
+<!-- TODO: add AI -->
+
+{% include "javascripts.html" %}
+<script type="text/javascript">
+  $(wait());
+</script>
+
+</body>
 </html>

@@ -2,28 +2,7 @@ import random
 from collections import OrderedDict, namedtuple, defaultdict
 
 import dictionary
-
-DICE_FACES = [
-    ['A', 'A', 'C', 'I', 'O', 'T'],
-    ['A', 'B', 'I', 'L', 'T', 'Y'],
-    ['A', 'B', 'J', 'M', 'O', 'Qu'],
-    ['A', 'C', 'D', 'E', 'M', 'P'],
-    ['A', 'C', 'E', 'L', 'R', 'S'],
-    ['A', 'D', 'E', 'N', 'V', 'Z'],
-    ['A', 'H', 'M', 'O', 'R', 'S'],
-    ['B', 'I', 'F', 'O', 'R', 'X'],
-    ['D', 'E', 'N', 'O', 'S', 'W'],
-    ['D', 'K', 'N', 'O', 'T', 'U'],
-    ['E', 'E', 'F', 'H', 'I', 'Y'],
-    ['E', 'G', 'K', 'L', 'U', 'Y'],
-    ['E', 'G', 'I', 'N', 'T', 'V'],
-    ['E', 'H', 'I', 'N', 'P', 'S'],
-    ['E', 'L', 'P', 'S', 'T', 'U'],
-    ['G', 'I', 'L', 'R', 'U', 'W'],
-]
-
-MAX_TURN_TIME = 20
-MAX_TURNS = 3
+from dice import DICE_FACES
 
 
 class Player(object):
@@ -112,9 +91,16 @@ class Player(object):
 
 class Game(object):
 
-    def __init__(self, game_id):
+    def __init__(self, game_id,
+                 max_turn_time=20,
+                 num_turns=3,
+                 width=5):
+
         self.game_id = game_id
-        self.board = roll_dice()
+        self.max_turn_time = max_turn_time
+        self.num_turns = num_turns
+        self.width = width
+        self.board = self.roll_dice()
         self.players = OrderedDict()
         self.state = State.NOT_STARTED
         self.turn = 0
@@ -132,9 +118,10 @@ class Game(object):
     def start_round(self):
         self.turn = random.randint(0, len(self.players) - 1)
         self.state = State.PLAYING
+        self.timer.interval = self.max_turn_time
         self.timer.start()
-        self.turns_left = MAX_TURNS * len(self.players)
-        self.board = roll_dice()
+        self.turns_left = self.num_turns * len(self.players)
+        self.board = self.roll_dice()
         for player in self.players.values():
             player.start_round()
 
@@ -196,8 +183,8 @@ class Game(object):
                       if self.player_at(x, y)
                       and (x, y) in player.seen_positions
                       else None)}
-                 for y in range(4)]
-                for x in range(4)]
+                 for y in range(self.width)]
+                for x in range(self.width)]
         return res
 
     def full_board_view_dict(self):
@@ -207,8 +194,8 @@ class Game(object):
             'color': (self.player_at(x, y).color
                       if self.player_at(x, y)
                       else None)}
-                 for y in range(4)]
-                for x in range(4)]
+                 for y in range(self.width)]
+                for x in range(self.width)]
 
     def gather_results(self):
         results = []
@@ -231,6 +218,19 @@ class Game(object):
     def end(self):
         if self.timer:
             self.timer.stop()
+
+    def roll_dice(self):
+        dices = [d for d in DICE_FACES[self.width]] # copy
+        random.shuffle(dices)
+        board = {}
+        for x in range(self.width):
+            for y in range(self.width):
+                i = x * self.width + y
+                letters = dices[i]
+                letter = letters[random.randint(0, len(letters) - 1)]
+                board[(x, y)] = BoardCell(letter, (x, y))
+
+        return board
 
 
 class Message(namedtuple('Message', 'text type')):
@@ -278,17 +278,3 @@ class State(object):
     NOT_STARTED = 'NOT_STARTED'
     PLAYING = 'PLAYING'
     ENDED = 'ENDED'
-
-
-def roll_dice():
-    dices = [d for d in DICE_FACES] # copy
-    random.shuffle(dices)
-    board = {}
-    for x in range(4):
-        for y in range(4):
-            i = x * 4 + y
-            letters = dices[i]
-            letter = letters[random.randint(0, len(letters) - 1)]
-            board[(x, y)] = BoardCell(letter, (x, y))
-
-    return board

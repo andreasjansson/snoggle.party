@@ -85,7 +85,7 @@ function updateCountdown() {
     var turnTime = $countdown.data('total-time');
     timeLeft -= 1.0 / (1000. / refreshFrequency)
     fractionLeft = Math.max(0, Math.min(timeLeft / turnTime, 1));
-    $countdown.css('width', Math.round(fractionLeft * 100) + '%');
+    $countdown.css('width', fractionLeft * 100 + '%');
 }
 
 function updateCountdownTime() {
@@ -216,6 +216,14 @@ function showExplosion(innerHtml) {
     $body.prepend($div);
 }
 
+function ajaxClick(e) {
+    var $a = $(e.target).closest('a');
+
+    $.get($a.attr('href'));
+
+    return false;
+}
+
 function main() {
     connectSocketIO();
 
@@ -224,6 +232,8 @@ function main() {
 
     $('body').on('click', '#board button', selectLetter);
     $('body').on('click', '#submit', submitWord);
+    $('body').on('click', '#controls a', ajaxClick);
+    $('body').on('click', '#next-round', ajaxClick);
 
     startCountdown();
     setupGuessButton();
@@ -235,12 +245,14 @@ function wait() {
 
     socket.on('game quit', handleGameQuit);
 
-    socket.on('player joined', function (data) {
+    socket.on('game updated', function (data) {
         replaceHtml(data.html, 'wrapper');
     });
     socket.on('start', function () {
         location.href = '/game';
     });
+
+    $('body').on('click', '.options a', ajaxClick);
 
     handleError();
 }

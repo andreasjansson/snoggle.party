@@ -11,24 +11,24 @@ class ResettableTimer(object):
         self.args       = args
         self.is_running = False
         self.start_time = 0
-        self.start()
 
-    def start(self, extra_time=0):
+    def start(self):
         print '%s: starting timer' % datetime.datetime.now().strftime('%H:%M:%S')
         self.start_time = time.time()
         if not self.is_running:
             self._timer = Timer(
-                self.interval + extra_time, self.function, self.args)
+                self.interval, self.function, self.args)
             self._timer.start()
             self.is_running = True
 
     def stop(self):
-        self._timer.cancel()
+        if self._timer:
+            self._timer.cancel()
         self.is_running = False
 
-    def restart(self, extra_time=0):
+    def restart(self):
         self.stop()
-        self.start(extra_time)
+        self.start()
 
     def time_remaining(self):
-        return self._timer.interval - (time.time() - self.start_time)
+        return self.interval - (time.time() - self.start_time)

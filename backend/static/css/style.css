@@ -171,3 +171,18 @@ ul {
     max-width: 100%;
     min-width: 60px;
 }
+
+.options a {
+    color: #fff;
+    padding: 5px 20px;
+    text-decoration: none;
+}
+
+.options a:hover, .options a:active, .options a.selected {
+    background-color: #f179ff;
+    text-shadow: none;
+}
+
+#footer {
+    margin-top: 30px;
+}

@@ -3,7 +3,7 @@
     {% for row in board_view %}
     <tr class="row">
       {% for cell in row %}
-      <td class="col-xs-3">
+      <td class="col-xs-1" style="width: {{ dice_width_percent }}%">
         <button class="dice"
                 type="submit"
                 name="position"
