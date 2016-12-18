@@ -1,7 +1,7 @@
 #todo:
 # * ai
-# * 5x5
 
+import sys
 from collections import OrderedDict
 import datetime
 from functools import wraps
@@ -13,7 +13,6 @@ import logging
 
 from game import Game
 import dictionary
-from timer import ResettableTimer
 
 COLOR_MAP = OrderedDict((
     ('red', '#FF4136'),
@@ -31,6 +30,17 @@ app.secret_key = 'super super secret key'
 socketio = SocketIO(app) #, logger=True, engineio_logger=True)
 socketio.logger = True
 games = {}
+
+
+def background_thread():
+    while True:
+        for game in games.values():
+            if game.playing() and game.turn_out_of_time():
+                turn_time_out(game)
+        socketio.sleep(0.5)
+
+
+socketio.start_background_task(target=background_thread)
 
 
 def require_game(started=True, emit=None, turn=False, playing=False):
@@ -120,9 +130,6 @@ def join():
 
     else:
         game = Game(game_id)
-        game.timer = ResettableTimer(
-            game.max_turn_time, turn_time_out, (game, ))
-
         games[game_id] = game
 
         if 'turn_time' in session:
@@ -367,6 +374,8 @@ def turn_time_out(game):
     check_word_and_guess(game, game.player_turn(), end_of_turn=True)
     game.next_turn()
 
+    print 'turn time out'
+
     with app.app_context():
         broadcast_emit_game(game, 'main')
 
@@ -374,6 +383,8 @@ def turn_time_out(game):
 def broadcast_emit_game(game, template):
     for p in game.players.values():
         if p.sid:
+            if p.color == 'green':
+                print '>>>>>>>> EMITTING GAME UPDATE'
             socketio.emit('game updated', {
                 'html': render_template(
                     '%s.html' % template, **game_state(game, p))
@@ -381,8 +392,6 @@ def broadcast_emit_game(game, template):
 
 
 def game_state(game, player):
-    print player.color, player.message
-
     return {
         'players': sorted(
             [p.to_visible_dict() for p in game.players.values()],
@@ -414,5 +423,8 @@ def game_state(game, player):
     }
 
 
-app.debug = True
-socketio.run(app, host='0.0.0.0')
+if __name__ == '__main__':
+    debug = len(sys.argv) > 1 and sys.argv[1] == 'debug'
+    app.debug = debug
+    port = 5000 if debug else 80
+    socketio.run(app, host='0.0.0.0', port=port)

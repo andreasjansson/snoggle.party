@@ -1,3 +1,4 @@
+import time
 import random
 from collections import OrderedDict, namedtuple, defaultdict
 
@@ -80,6 +81,7 @@ class Player(object):
 
     def start_guessing(self):
         self.is_guessing = True
+        self.clear_word()
         self.guess = Word()
 
     def add_word(self, word):
@@ -104,7 +106,7 @@ class Game(object):
         self.players = OrderedDict()
         self.state = State.NOT_STARTED
         self.turn = 0
-        self.timer = None
+        self.turn_end_time = float('infinity')
         self.turns_left = 0
 
     def add_player(self, color):
@@ -118,17 +120,14 @@ class Game(object):
     def start_round(self):
         self.turn = random.randint(0, len(self.players) - 1)
         self.state = State.PLAYING
-        self.timer.interval = self.max_turn_time
-        self.timer.start()
+        self.turn_end_time = time.time() + self.max_turn_time
         self.turns_left = self.num_turns * len(self.players)
         self.board = self.roll_dice()
         for player in self.players.values():
             player.start_round()
 
     def turn_time_left(self):
-        if not self.timer:
-            return float('infinity')
-        return self.timer.time_remaining()
+        return self.turn_end_time - time.time()
 
     def turn_out_of_time(self):
         return self.turn_time_left() <= 0
@@ -141,10 +140,9 @@ class Game(object):
         else:
             self.turn = (self.turn + 1) % len(self.players)
             self.player_turn().start_turn()
-            self.timer.restart()
+            self.turn_end_time = time.time() + self.max_turn_time
 
     def end_round(self):
-        self.timer.stop()
         self.state = State.ENDED
         self.update_player_scores()
 
@@ -216,8 +214,7 @@ class Game(object):
         return self.state == State.ENDED
 
     def end(self):
-        if self.timer:
-            self.timer.stop()
+        self.state = State.ENDED
 
     def roll_dice(self):
         dices = [d for d in DICE_FACES[self.width]] # copy
