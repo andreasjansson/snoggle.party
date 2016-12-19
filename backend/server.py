@@ -1,12 +1,15 @@
 #todo:
 # * ai
+# * make skip button submit
+# * tests
+# * better message/error graphics
 
 import sys
 from collections import OrderedDict
 import datetime
 from functools import wraps
 from flask import (
-    Flask, session, redirect, url_for, request, render_template, send_from_directory
+    Flask, session, redirect, url_for, request, render_template, send_from_directory, jsonify
 )
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import logging
@@ -203,6 +206,9 @@ def start(game, player):
         player.error = 'Need at least two players to play'
         return redirect(url_for('wait'))
 
+    if game.playing():
+        return redirect(url_for('main'))
+
     game.start_round()
     for p in game.players.values():
         if p.sid:
@@ -233,10 +239,10 @@ def select(game, player):
     if player.is_guessing:
         player.guess.append(cell)
 
+    else:
         if (x, y) in player.seen_positions:
             return redirect(url_for('main'))
 
-    else:
         if not player.is_adjacent_to_last_position((x, y)):
             return redirect(url_for('main'))
 
@@ -247,6 +253,42 @@ def select(game, player):
             player.word.append(cell)
 
     return redirect(url_for('main'))
+
+
+@app.route('/select-ajax', methods=['POST'])
+@require_game(turn=True, playing=True)
+def select_ajax(game, player):
+    x, y = request.form['position'].split('|')[1].split(',')
+    x, y = int(x), int(y)
+
+    cell = game.board[(x, y)]
+
+    def json_response():
+        return jsonify({
+            'word': player.word.letters(),
+            'board_html': render_template('board.html',
+                                          **game_state(game, player))
+        })
+
+    if player.is_guessing:
+        player.guess.append(cell)
+
+        return json_response()
+
+    else:
+        if (x, y) in player.seen_positions:
+            return json_response()
+
+        if not player.is_adjacent_to_last_position((x, y)):
+            return json_response()
+
+        player.seen_positions.add((x, y))
+
+        if not game.player_at(x, y):
+            player.last_position = (x, y)
+            player.word.append(cell)
+
+        return json_response()
 
 
 @app.route('/submit', methods=['POST'])

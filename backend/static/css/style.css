@@ -15,6 +15,10 @@ body {
     max-width: 100%;
 }
 
+button {
+    outline: none;
+}
+
 #board {
     background: none;
     padding: 0px;
@@ -36,6 +40,11 @@ body {
     height: auto;
     background: none;
     border: 0;
+}
+
+.animate-blur {
+    transition: all 1s ease-in;
+    filter: blur(10px);
 }
 
 #board .dice-image {
