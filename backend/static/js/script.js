@@ -22,30 +22,28 @@ function connectSocketIO() {
     socket = io.connect('http://' + document.domain + ':' + location.port + '/');
 }
 
-function nudgeDice($button) {
-    $button
-        .animate({zoom: 1.1}, 200)
-        .animate({zoom: 1.0}, 200);
+function handleSelectResponse(data) {
+    var word = data.word.toUpperCase();
+    $('#board').html(data.board_html);
+    $('#your-word').text(word);
+    if (word.length > 0) {
+        $('#submit-word').removeAttr('disabled');
+    }
 }
 
 function selectLetter(e) {
     var $button = $($(e.target).closest('button'));
 
-    nudgeDice($button); // bounce it a little
-
     if ($button.attr('disabled')) {
         return false;
     }
 
-    if (isGuessing()) {
-        var letter = $button.data('letter');
-        var $guessedWord = $('#guessed-word');
-        $guessedWord.text($guessedWord.text() + letter);
-    } else {
-        data = {};
-        data[$button.attr('name')] = $button.attr('value');
-        $.post('/select', data);
-    }
+    $button.attr('disabled', 'disabled');
+    $button.addClass('animate-blur');
+
+    $.post('/select-ajax', {'position': $button.attr('value')},
+           handleSelectResponse);
+
     return false;
 }
 

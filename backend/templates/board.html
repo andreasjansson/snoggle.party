@@ -8,7 +8,7 @@
                 type="submit"
                 name="position"
                 data-letter="{{ cell.letter }}"
-                {% if not is_players_turn %}
+                {% if not is_players_turn or cell.disabled %}
                 disabled="disabled"
                 {% endif %}
                 value="{{ cell.value }}">

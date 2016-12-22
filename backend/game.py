@@ -177,6 +177,7 @@ class Game(object):
         res = [[{
             'letter': self.board[(x, y)].letter,
             'value': '%s|%d,%d' % (self.board[(x, y)].letter, x, y),
+            'disabled': (x, y) in player.seen_positions,
             'color': (self.player_at(x, y).color
                       if self.player_at(x, y)
                       and (x, y) in player.seen_positions
@@ -189,6 +190,7 @@ class Game(object):
         return [[{
             'letter': self.board[(x, y)].letter,
             'value': '%s|%d,%d' % (self.board[(x, y)].letter, x, y),
+            'disabled': True,
             'color': (self.player_at(x, y).color
                       if self.player_at(x, y)
                       else None)}
