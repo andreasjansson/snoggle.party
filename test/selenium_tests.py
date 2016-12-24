@@ -738,15 +738,15 @@ class TurnTests(SnoggleTestCase):
         browser1.submit_word((0, 0), (1, 1), (2, 2)) #PET
 
         browser2.wait_for_turn()
-        time.sleep(1)
+        time.sleep(2)
         browser2.submit_word((4, 0), (3, 0), (3, 1), (3, 2), (2, 1)) #FLOOR
 
         browser1.wait_for_turn()
-        time.sleep(1)
+        time.sleep(2)
         browser1.submit_word((0, 4), (1, 4), (2, 3)) #QUIT
 
         browser2.wait_for_turn()
-        time.sleep(1)
+        time.sleep(2)
         browser2.submit_word((4, 2), (4, 3), (3, 4)) #FUR
 
         browser1.wait_for_end_of_game(10)
@@ -761,19 +761,19 @@ class TurnTests(SnoggleTestCase):
         browser1.submit_word((0, 0), (1, 1), (2, 2)) #PET
 
         browser2.wait_for_turn()
-        time.sleep(1)
+        time.sleep(2)
         browser2.submit_word((4, 0), (3, 0), (3, 1), (3, 2), (2, 1)) #FLOOR
 
         browser1.wait_for_turn()
-        time.sleep(1)
+        time.sleep(2)
         browser1.submit_word((0, 4), (1, 4), (2, 3)) #QUIT
 
         browser2.wait_for_turn()
-        time.sleep(1)
+        time.sleep(2)
         browser2.submit_word((4, 2), (4, 3), (3, 4)) #FUR
 
         browser1.wait_for_turn()
-        time.sleep(1)
+        time.sleep(2)
         browser1.submit_word((0, 3), (0, 2)) #ME
 
         browser2.wait_for_turn()
