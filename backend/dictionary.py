@@ -25,7 +25,7 @@ SCORES = {
     'k': 5,
     'j': 8,
     'x': 8,
-    'q': 10,
+    'q': 9, # 10 - 1 (q is always qu, q is 10 and u is 1 but both counted here)
     'z': 10,
 
 }

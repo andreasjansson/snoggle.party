@@ -1,9 +1,9 @@
 #todo:
 # * ai
 # * make skip button submit
-# * tests
 # * better message/error graphics
 
+import argparse
 import sys
 from collections import OrderedDict
 import datetime
@@ -107,7 +107,7 @@ def index():
 
 @app.route('/join', methods=['POST'])
 def join():
-    game_id = request.form['game_id']
+    game_id = request.form['game-id']
 
     if not game_id:
         session['error'] = 'Missing Game ID'
@@ -132,7 +132,7 @@ def join():
         game = games[game_id]
 
     else:
-        game = Game(game_id)
+        game = Game(game_id, is_deterministic=is_deterministic)
         games[game_id] = game
 
         if 'turn_time' in session:
@@ -174,7 +174,7 @@ def options(game, player):
 
     if 'turn-time' in args:
         turn_time = int(args['turn-time'])
-        if turn_time in [5, 10, 20, 40]:
+        if turn_time in [10, 20, 40, 60]:
             game.max_turn_time = turn_time
             session['turn_time'] = turn_time
         else:
@@ -199,7 +199,7 @@ def options(game, player):
     return redirect(url_for('wait'))
 
 
-@app.route('/start', methods=['POST'])
+@app.route('/start', methods=['GET', 'POST'])
 @require_game(False)
 def start(game, player):
     if len(game.players) < 2:
@@ -265,7 +265,9 @@ def select_ajax(game, player):
 
     def json_response():
         return jsonify({
-            'word': player.word.letters(),
+            'word': (player.guess.letters()
+                     if player.is_guessing
+                     else player.word.letters()),
             'board_html': render_template('board.html',
                                           **game_state(game, player))
         })
@@ -380,19 +382,23 @@ def check_word_and_guess(game, player, end_of_turn=False):
     score = dictionary.score(word)
 
     if player.is_guessing:
-        word_player = game.player_with_word(word)
+        existing_word = game.get_existing_word(word)
 
-        if player.color in word.previous_owners:
-            player.set_error('You owned that before!')
-            player.clear_guess()
+        if existing_word:
+            if player.color in existing_word.previous_owner_colors:
+                player.set_error('You owned that before!')
+                player.clear_guess()
 
-        if word_player:
-            player.steal_word(word_player, word)
-            player.set_message('You guessed %s\'s word %s (%d points)!' % (
-                word_player.color, letters, score))
-            word_player.set_message('%s guessed your word %s' % (
-                player.color.capitalize(), letters))
-            game.next_turn()
+            else:
+                previous_owner = existing_word.player
+                existing_word.steal(player)
+                player.set_message('You guessed %s\'s word %s (%d points)!' % (
+                    previous_owner.color, letters, score))
+                previous_owner.set_message('%s guessed your word %s' % (
+                    player.color.capitalize(), letters))
+
+                if not end_of_turn:
+                    game.next_turn()
 
         else:
             if not end_of_turn:
@@ -401,7 +407,7 @@ def check_word_and_guess(game, player, end_of_turn=False):
 
     else:
         if dictionary.contains(word):
-            player.add_word(word)
+            game.add_word(word)
             player.set_message('%s: %d points!' % (letters, score))
             if not end_of_turn:
                 game.next_turn()
@@ -465,8 +471,16 @@ def game_state(game, player):
     }
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description='Snoggle game')
+    parser.add_argument('--debug', default=False, action='store_true')
+    parser.add_argument('--deterministic-board', default=False,
+                        action='store_true')
+    return parser.parse_args()
+
 if __name__ == '__main__':
-    debug = len(sys.argv) > 1 and sys.argv[1] == 'debug'
-    app.debug = debug
-    port = 5000 if debug else 80
+    args = parse_args()
+    app.debug = args.debug
+    port = 5000 if args.debug else 80
+    is_deterministic = args.deterministic_board
     socketio.run(app, host='0.0.0.0', port=port)

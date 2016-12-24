@@ -25,9 +25,9 @@
   <div id="wrapper">
     <div class="row">
       <div class="col-sm-4 col-xs-12">
-        <h3>Game ID: {{ game_id }}</h3>
+        <h3>Game ID: <span id="game-id">{{ game_id }}</span></h3>
         <p>Players:</p>
-        <ul>
+        <ul id="players">
           {% for player in players %}
           <li style="color: {{ color_map[player.color] }}">{{ player.color }}</li>
           {% endfor %}
@@ -45,7 +45,7 @@
         <h3>Options</h3>
         <p>Turn time seconds</p>
         <div class="options">
-          {% for option in [5, 10, 20, 40] %}
+          {% for option in [10, 20, 40, 60] %}
           <a href="/options?turn-time={{ option }}" {% if option == turn_time_total %}class="selected"{% endif %}>{{ option }}</a>
           {% endfor %}
         </div>
