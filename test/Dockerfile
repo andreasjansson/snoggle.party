@@ -9,7 +9,9 @@ RUN     apt-get update && apt-get install -y \
             libappindicator1 \
             libindicator7 \
             unzip \
-            wget
+            wget \
+            python-nose \
+            python-ipdb
 
 RUN     pip install \
             flask \
