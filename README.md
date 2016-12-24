@@ -1,1 +1,1 @@
-# snoggle.party
+# [http://snoggle.party](snoggle.party)
