@@ -1,7 +1,9 @@
+sudo: required
+
 language: python
 
 services:
   - docker
 
 script:
-  - docker run --shm-size=1GB -v "$PWD":"/opt/snoggle" -it snoggle.party-test nosetests --nocapture selenium_tests.py
+  - docker run --shm-size=1GB -v "$PWD":"/opt/snoggle" -it andreasjansson/snoggle.party-test nosetests --nocapture selenium_tests.py
