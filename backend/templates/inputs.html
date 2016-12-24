@@ -6,7 +6,8 @@
          style="background-color: {{ color_map[turn.color] }};
                 width: {{ turn_time_percent }}%"
          id="countdown"></div>
-    <p class="word-input" id="your-word">
+    <p class="word-input" id="your-word"
+       data-guessing="{% if player.is_guessing %}true{% else %}false{% endif %}">
       {% if is_players_turn %}
 
       {% if player.is_guessing %}
@@ -17,7 +18,7 @@
 
       {% else %}
 
-      <em>wait...</em>
+      <em id="wait-text">wait...</em>
 
       {% endif %}
     </p>
@@ -54,12 +55,12 @@
     <div class="col-xs-4">
       {% if not player.is_guessing %}
       <a href="/start-guessing">
-        <img src="/images/thinking.png" alt="Start guessing" />
+        <img src="/images/thinking.png" alt="Start guessing" id="start-guessing" />
       </a>
       {% endif %}
     </div>
     <div class="col-xs-4">
-      <a href="/clear">
+      <a href="/clear" id="clear-control">
         <img src="/images/clear.png" alt="Clear word" />
       </a>
     </div>

@@ -23,6 +23,8 @@ function connectSocketIO() {
 }
 
 function handleSelectResponse(data) {
+    console.log(data);
+
     var word = data.word.toUpperCase();
     $('#board').html(data.board_html);
     $('#your-word').text(word);
