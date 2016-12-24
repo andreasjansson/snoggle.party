@@ -157,6 +157,12 @@ class SnoggleBrowser(webdriver.Chrome):
     def wait_for_turn_timeout(self, turn_time=TURN_TIME):
         self.wait_for_css_selector('#wait-text', turn_time + 2)
 
+    def wait_for_end_of_game(self, timeout=TURN_TIME):
+        self.wait_for_css_selector('#results', timeout)
+
+    def is_ended(self):
+        return self.has_element('#results')
+
     def color(self):
         return self.find_element_by_css_selector('#wrapper').get_attribute(
             'data-player-color')
@@ -204,13 +210,13 @@ class SnoggleBrowser(webdriver.Chrome):
 
 
 def start_game(colors=('red', 'teal'), game_id='foo', board_width=5,
-               turn_time=TURN_TIME, turns_per_player=3):
+               turn_time=TURN_TIME, num_turns=3):
     for b, color in zip(browsers, colors):
         b.join_game(color, game_id)
 
     browser1.set_option('board-width', board_width)
     browser1.set_option('turn-time', turn_time)
-    browser1.set_option('num-turns', turns_per_player)
+    browser1.set_option('num-turns', num_turns)
     browser1.start_game()
 
 
@@ -724,11 +730,59 @@ class TimeoutTests(SnoggleTestCase):
         self.assertEquals(browser2.color_at(0, 0), 'red')
 
 
-class TurnTests(object):
+class TurnTests(SnoggleTestCase):
 
     def test_correct_number_of_turns(self):
-        start_game(num_turns=2)
+        start_game(num_turns=2, turn_time=10)
 
+        browser1.submit_word((0, 0), (1, 1), (2, 2)) #PET
+
+        browser2.wait_for_turn()
+        time.sleep(1)
+        browser2.submit_word((4, 0), (3, 0), (3, 1), (3, 2), (2, 1)) #FLOOR
+
+        browser1.wait_for_turn()
+        time.sleep(1)
+        browser1.submit_word((0, 4), (1, 4), (2, 3)) #QUIT
+
+        browser2.wait_for_turn()
+        time.sleep(1)
+        browser2.submit_word((4, 2), (4, 3), (3, 4)) #FUR
+
+        browser1.wait_for_end_of_game(10)
+        browser2.wait_for_end_of_game(10)
+
+        self.assertTrue(browser1.is_ended())
+        self.assertTrue(browser2.is_ended())
+
+    def test_correct_number_of_turns_with_timeout(self):
+        start_game(num_turns=3, turn_time=10)
+
+        browser1.submit_word((0, 0), (1, 1), (2, 2)) #PET
+
+        browser2.wait_for_turn()
+        time.sleep(1)
+        browser2.submit_word((4, 0), (3, 0), (3, 1), (3, 2), (2, 1)) #FLOOR
+
+        browser1.wait_for_turn()
+        time.sleep(1)
+        browser1.submit_word((0, 4), (1, 4), (2, 3)) #QUIT
+
+        browser2.wait_for_turn()
+        time.sleep(1)
+        browser2.submit_word((4, 2), (4, 3), (3, 4)) #FUR
+
+        browser1.wait_for_turn()
+        time.sleep(1)
+        browser1.submit_word((0, 3), (0, 2)) #ME
+
+        browser2.wait_for_turn()
+
+        browser1.wait_for_end_of_game(12)
+        browser2.wait_for_end_of_game(12)
+
+        self.assertTrue(browser1.is_ended())
+        self.assertTrue(browser2.is_ended())
 
 
 class ResultTests(object):
