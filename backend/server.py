@@ -28,10 +28,9 @@ COLOR_MAP = OrderedDict((
 
 
 app = Flask(__name__, static_url_path='')
-app.logger.setLevel(logging.DEBUG)
+app.logger.setLevel(logging.INFO)
 app.secret_key = 'super super secret key'
 socketio = SocketIO(app) #, logger=True, engineio_logger=True)
-socketio.logger = True
 games = {}
 
 
