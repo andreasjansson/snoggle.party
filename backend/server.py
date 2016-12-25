@@ -103,7 +103,10 @@ def index():
             del session['game_id']
             del session['color']
         else:
-            return redirect(url_for('main'))
+            if game.started():
+                return redirect(url_for('main'))
+            else:
+                return redirect(url_for('wait'))
 
     error = session.pop('error', None)
     return render_template('index.html', colors=COLOR_MAP.keys(), color_map=COLOR_MAP, error=error)

@@ -441,6 +441,13 @@ class WaitTests(SnoggleTestCase):
 
         self.assertEquals(len(browser1.get_board()), 5)
 
+    def test_redirect_from_home(self):
+        browser1.join_game('red')
+        browser1.get('http://127.0.0.1:80')
+        browser1.wait_for_css_selector('#wait-page')
+        self.assertTrue(browser1.has_element('#wait-page'))
+
+
 
 class ActiveInactiveTests(SnoggleTestCase):
 
