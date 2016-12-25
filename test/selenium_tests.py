@@ -511,14 +511,14 @@ class SelectTests(SnoggleTestCase):
         self.assertEquals(browser1.get_word(), 'P')
 
     def test_select_existing_letter_next_turn(self):
-        start_game()
+        start_game(turn_time=40)
         browser1.submit_word((0, 0), (1, 1), (2, 0), (2, 1), (3, 0))
 
         browser2.wait_for_turn()
         browser2.submit_word((4, 2), (4, 3), (3, 4))
 
         browser1.wait_for_turn()
-        time.sleep(2)
+        time.sleep(4)
         browser1.click_dice_sleep(1, 1)
         browser1.click_dice_sleep(3, 0)
         self.assertEquals(browser1.get_word(), '')
@@ -565,7 +565,7 @@ class ClearTests(SnoggleTestCase):
         self.assertTrue(browser1.is_guessing())
 
         browser1.click_clear()
-        browser1.wait_for_dice(1, 0, None)
+        browser1.wait_for_word('')
 
         self.assertEquals(browser1.get_word(), '')
         self.assertFalse(browser1.is_guessing())
