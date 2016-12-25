@@ -9,7 +9,8 @@ from selenium import webdriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import (
+    NoSuchElementException, TimeoutException, WebDriverException)
 
 TURN_TIME = 20
 
@@ -302,7 +303,10 @@ class SnoggleTestCase(TestCase):
 
     def tearDown(self):
         for b in browsers:
-            b.delete_all_cookies()
+            try:
+                b.delete_all_cookies()
+            except WebDriverException as e:
+                print 'failed to clear cookies: %s' % e
 
         self.snoggle_process.kill()
         time.sleep(1)
@@ -653,7 +657,7 @@ class GuessSubmitTests(SnoggleTestCase):
             self.assertEquals(browser2.color_at(x, y), 'teal')
 
     def test_guess_right_positions_wrong_word(self):
-        start_game()
+        start_game(turn_time=40)
         positions = [(1, 2), (1, 1), (2, 2)]
         browser1.submit_word(*positions)
         browser2.wait_for_turn()
@@ -692,7 +696,7 @@ class GuessSubmitTests(SnoggleTestCase):
             self.assertEquals(browser2.color_at(x, y), None)
 
     def test_guess_already_stolen_word(self):
-        start_game()
+        start_game(turn_time=40)
         positions = [(0, 1), (0, 0)]
         browser1.submit_word(*positions)
         browser2.wait_for_turn()
