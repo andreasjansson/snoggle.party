@@ -1,3 +1,4 @@
+from collections import namedtuple
 from contextlib import contextmanager
 import math
 import time
@@ -9,7 +10,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
-#from box.test.flaky import flaky
 
 TURN_TIME = 20
 
@@ -56,7 +56,7 @@ class SnoggleBrowser(webdriver.Chrome):
 
     def home(self):
         self.get('http://127.0.0.1:80')
-        self.wait_for_css_selector('#game-id')
+        self.wait_for_css_selector('#index-page')
 
     def wait_for_css_selector(self, selector, timeout=5):
         try:
@@ -75,6 +75,16 @@ class SnoggleBrowser(webdriver.Chrome):
             print '******************', selector, self.has_element(selector)
             self.get_screenshot_as_file('/opt/snoggle/screenshot-timeout-xpath.png')
             raise e
+
+    def wait_for_alert(self, timeout=5):
+        try:
+            WebDriverWait(self, timeout).until(EC.alert_is_present())
+        except TimeoutException as e:
+            self.get_screenshot_as_file('/opt/snoggle/screenshot-timeout-alert.png')
+            raise e
+
+    def accept_alert(self):
+        self.switch_to_alert().accept()
 
     def join_game(self, color, game_id='foo'):
         self.home()
@@ -208,6 +218,44 @@ class SnoggleBrowser(webdriver.Chrome):
     def is_active(self):
         return self.has_element('#clear-control')
 
+    def get_results(self):
+        results = []
+        lis = self.find_elements_by_css_selector('#results .result')
+        for li in lis:
+            color = li.find_element_by_css_selector('.result-color').text
+            total_score = int(
+                li.find_element_by_css_selector('.result-total-score').text)
+            word_scores = []
+            for word_li in li.find_elements_by_css_selector('li'):
+                word = word_li.find_element_by_css_selector(
+                    '.result-word').text
+                score = int(word_li.find_element_by_css_selector(
+                    '.result-word-score').text)
+                word_scores.append((word, score))
+
+            results.append(Result(color, total_score, word_scores))
+
+        return results
+
+    def get_scores(self):
+        scores = []
+        div = self.find_element_by_css_selector('#scores')
+        for li in div.find_elements_by_css_selector('li'):
+            color = li.find_element_by_css_selector('.score-color').text
+            wins = int(li.find_element_by_css_selector('.score-wins').text)
+            points = int(li.find_element_by_css_selector('.score-points').text)
+            scores.append(Score(color, wins, points))
+
+        return scores
+
+    def next_round(self):
+        self.find_element_by_id('next-round').click()
+        self.wait_for_css_selector('#your-word')
+
+    def quit_game(self):
+        self.find_element_by_id('quit-game').click()
+        self.wait_for_css_selector('#index-page')
+
 
 def start_game(colors=('red', 'teal'), game_id='foo', board_width=5,
                turn_time=TURN_TIME, num_turns=3):
@@ -235,6 +283,10 @@ def get_inactive_player_browser():
     for b in browsers:
         if b.has_element('#wait-text'):
             return b
+
+
+Result = namedtuple('Result', 'color score word_scores')
+Score = namedtuple('Score', 'color wins points')
 
 
 class SnoggleTestCase(TestCase):
@@ -412,7 +464,7 @@ class ActiveInactiveTests(SnoggleTestCase):
         self.assertEquals(len(inactive_players), 2)
 
 
-class SelectLetterTests(SnoggleTestCase):
+class SelectTests(SnoggleTestCase):
 
     def test_select_first_letter(self):
         start_game()
@@ -447,6 +499,25 @@ class SelectLetterTests(SnoggleTestCase):
         browser2.click_dice_sleep(1, 1)
         self.assertEquals(browser2.color_at(1, 1), None)
         self.assertEquals(browser2.get_word(), 'wait...')
+
+    def test_select_existing_letter(self):
+        start_game()
+        browser1.click_dice(0, 0)
+        browser1.click_dice_sleep(0, 0)
+        self.assertEquals(browser1.get_word(), 'P')
+
+    def test_select_existing_letter_next_turn(self):
+        start_game()
+        browser1.submit_word((0, 0), (1, 1), (2, 0), (2, 1), (3, 0))
+
+        browser2.wait_for_turn()
+        browser2.submit_word((4, 2), (4, 3), (3, 4))
+
+        browser1.wait_for_turn()
+        time.sleep(2)
+        browser1.click_dice_sleep(1, 1)
+        browser1.click_dice_sleep(3, 0)
+        self.assertEquals(browser1.get_word(), '')
 
 
 class ClearTests(SnoggleTestCase):
@@ -491,8 +562,6 @@ class ClearTests(SnoggleTestCase):
 
         browser1.click_clear()
         browser1.wait_for_dice(1, 0, None)
-
-        browser1.get_screenshot_as_file('/opt/snoggle/screenshot-guessing.png')
 
         self.assertEquals(browser1.get_word(), '')
         self.assertFalse(browser1.is_guessing())
@@ -785,16 +854,253 @@ class TurnTests(SnoggleTestCase):
         self.assertTrue(browser2.is_ended())
 
 
-class ResultTests(object):
+class ResultTests(SnoggleTestCase):
 
-    pass
+    def test_scores(self):
+        start_game(num_turns=2, turn_time=10)
+
+        browser1.submit_word((0, 0), (1, 1), (2, 2)) #PET
+
+        browser2.wait_for_turn()
+        time.sleep(2)
+        browser2.submit_word((4, 0), (3, 0), (3, 1), (3, 2), (2, 1)) #FLOOR
+
+        browser1.wait_for_turn()
+        time.sleep(2)
+        browser1.submit_word((0, 4), (1, 4), (2, 3)) #QUIT
+
+        browser2.wait_for_turn()
+        time.sleep(2)
+        browser2.submit_word((4, 2), (4, 3), (3, 4)) #FUR
+
+        browser1.wait_for_end_of_game(5)
+        browser2.wait_for_end_of_game(5)
+
+        expected_results = [
+            Result('red', score=17, word_scores=[('QUIT', 12), ('PET', 5)]),
+            Result('teal', score=14, word_scores=[('FLOOR', 8), ('FUR', 6)])
+        ]
+
+        self.assertEquals(browser1.get_results(), expected_results)
+        self.assertEquals(browser2.get_results(), expected_results)
+
+    def test_scores_with_stolen_words(self):
+        start_game(num_turns=2, turn_time=10)
+
+        browser1.submit_word((0, 0), (1, 1), (2, 2)) #PET
+
+        browser2.wait_for_turn()
+        time.sleep(2)
+        browser2.submit_word((4, 0), (3, 0), (3, 1), (3, 2), (2, 1)) #FLOOR
+
+        browser1.wait_for_turn()
+        time.sleep(2)
+        browser1.submit_word((0, 4), (1, 4), (2, 3)) #QUIT
+
+        browser2.wait_for_turn()
+        time.sleep(2)
+        browser2.start_guessing()
+        browser2.guess_word((0, 0), (1, 1), (2, 2)) #PET
+
+        browser1.wait_for_end_of_game(5)
+        browser2.wait_for_end_of_game(5)
+
+        expected_results = [
+            Result('teal', score=13, word_scores=[('FLOOR', 8), ('PET', 5)]),
+            Result('red', score=12, word_scores=[('QUIT', 12)]),
+        ]
+
+        self.assertEquals(browser1.get_results(), expected_results)
+        self.assertEquals(browser2.get_results(), expected_results)
+
+    def test_scores_with_failed_words(self):
+        start_game(num_turns=2, turn_time=20)
+
+        browser1.submit_word((0, 0), (1, 1), (2, 2)) #PET
+
+        browser2.wait_for_turn()
+        time.sleep(2)
+        browser2.click_dice(0, 1)
+        browser2.click_dice(0, 0, 'red')
+        browser2.click_dice(0, 2)
+        browser2.click_word_submit()
+        browser2.wait_for_word('')
+
+        self.assertTrue(browser2.is_active())
+
+        browser2.click_dice(2, 2, 'red')
+        browser2.click_dice(2, 4)
+        browser2.wait_for_turn_timeout()
+
+        self.assertEquals(browser2.color_at(2, 4), None)
+
+        browser1.wait_for_turn()
+        browser1.submit_word((0, 4), (1, 4), (2, 3)) #QUIT
+
+        browser2.wait_for_turn()
+        browser2.click_dice(2, 2, 'red')
+        browser2.click_dice(3, 2)
+        browser2.start_guessing()
+        browser2.click_dice_wait_for_letter(1, 4)
+        browser2.click_dice_wait_for_letter(0, 4)
+
+        browser1.wait_for_end_of_game(20)
+        browser2.wait_for_end_of_game()
+
+        expected_results = [
+            Result('red', score=17, word_scores=[('QUIT', 12), ('PET', 5)]),
+            Result('teal', score=0, word_scores=[]),
+        ]
+
+        self.assertEquals(browser1.get_results(), expected_results)
+        self.assertEquals(browser2.get_results(), expected_results)
+
+    def test_scores_and_wins_updated(self):
+        # two games
+        start_game(num_turns=2, turn_time=10)
+
+        browser1.submit_word((0, 0), (1, 1), (2, 2)) #PET
+
+        browser2.wait_for_turn()
+        time.sleep(2)
+        browser2.submit_word((4, 0), (3, 0), (3, 1), (3, 2), (2, 1)) #FLOOR
+
+        browser1.wait_for_turn()
+        time.sleep(2)
+        browser1.submit_word((0, 4), (1, 4), (2, 3)) #QUIT
+
+        browser2.wait_for_turn()
+        time.sleep(2)
+        browser2.submit_word((4, 2), (4, 3), (3, 4)) #FUR
+
+        browser1.wait_for_end_of_game(5)
+        browser2.wait_for_end_of_game()
+
+        expected_scores = [Score('red', 1, 17), Score('teal', 0, 14)]
+
+        self.assertEquals(browser1.get_scores(), expected_scores)
+        self.assertEquals(browser2.get_scores(), expected_scores)
+
+        browser1.next_round()
+
+        browser1.submit_word((2, 0), (1, 0), (1, 1)) #ACE
+
+        browser2.wait_for_turn()
+        time.sleep(2)
+        browser2.submit_word((4, 0), (3, 0), (3, 1), (3, 2), (2, 1)) #FLOOR
+
+        browser1.wait_for_turn()
+        time.sleep(2)
+        browser1.submit_word((0, 4), (1, 4), (2, 3)) #QUIT
+
+        browser2.wait_for_turn()
+        time.sleep(2)
+        browser2.submit_word((0, 1), (0, 0)) #UP
+
+        browser1.wait_for_end_of_game(5)
+        browser2.wait_for_end_of_game()
+
+        expected_scores = [Score('red', 2, 34), Score('teal', 0, 26)]
+
+        self.assertEquals(browser1.get_scores(), expected_scores)
+        self.assertEquals(browser2.get_scores(), expected_scores)
+
+    def test_tie(self):
+        start_game(num_turns=2, turn_time=10)
+
+        browser1.submit_word((0, 0), (1, 1), (1, 2), (2, 2)) #PENT
+
+        browser2.wait_for_turn()
+        time.sleep(2)
+        browser2.submit_word((4, 0), (3, 0), (3, 1), (3, 2), (2, 1)) #FLOOR
+
+        browser1.wait_for_turn()
+        time.sleep(2)
+        browser1.submit_word((0, 4), (1, 4), (2, 3)) #QUIT
+
+        browser2.wait_for_turn()
+        time.sleep(2)
+        browser2.submit_word((4, 2), (4, 3), (3, 4), (2, 4)) #FURY
+
+        browser1.wait_for_end_of_game(5)
+        browser2.wait_for_end_of_game()
+
+        expected_scores = [Score('red', 1, 18), Score('teal', 1, 18)]
+
+        self.assertEquals(browser1.get_scores(), expected_scores)
+        self.assertEquals(browser2.get_scores(), expected_scores)
 
 
-class QuitTests(object):
+class AnotherRoundTests(SnoggleTestCase):
 
-    pass
+    def test_start_new_round(self):
+        start_game(num_turns=2, turn_time=10)
+
+        browser1.submit_word((0, 0), (1, 1), (1, 2), (2, 2)) #PENT
+
+        browser2.wait_for_turn()
+        time.sleep(2)
+        browser2.submit_word((4, 0), (3, 0), (3, 1), (3, 2), (2, 1)) #FLOOR
+
+        browser1.wait_for_turn()
+        time.sleep(2)
+        browser1.submit_word((0, 4), (1, 4), (2, 3)) #QUIT
+
+        browser2.wait_for_turn()
+        time.sleep(2)
+        browser2.submit_word((4, 2), (4, 3), (3, 4), (2, 4)) #FURY
+
+        browser1.wait_for_end_of_game(5)
+        browser2.wait_for_end_of_game()
+
+        self.assertFalse(browser1.is_active())
+        self.assertFalse(browser2.is_active())
+
+        browser1.next_round()
+
+        self.assertTrue(browser1.is_active())
+        self.assertFalse(browser2.is_active())
+        self.assertTrue(browser2.has_element('#wait-text'))
 
 
-class NewGameTests(object):
+class QuitTests(SnoggleTestCase):
 
-    pass
+    def test_quit_on_wait_screen(self):
+        browser1.join_game('red')
+        browser2.join_game('teal')
+
+        browser1.quit_game()
+
+        self.assertEquals(browser1.current_url, 'http://127.0.0.1/')
+
+        browser2.wait_for_alert()
+        browser2.accept_alert()
+        browser2.wait_for_css_selector('#index-page')
+
+        self.assertEquals(browser2.current_url, 'http://127.0.0.1/')
+
+    def test_quit_on_game_screen(self):
+        start_game()
+
+        browser1.quit_game()
+
+        self.assertEquals(browser1.current_url, 'http://127.0.0.1/')
+
+        browser2.wait_for_alert()
+        browser2.accept_alert()
+        browser2.wait_for_css_selector('#index-page')
+
+        self.assertEquals(browser2.current_url, 'http://127.0.0.1/')
+
+    def test_quit_can_restart(self):
+        start_game()
+
+        browser1.quit_game()
+
+        browser2.wait_for_alert()
+        browser2.accept_alert()
+        browser2.wait_for_css_selector('#index-page')
+
+        start_game()
+
+        self.assertTrue(browser1.is_active())

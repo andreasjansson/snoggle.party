@@ -2,32 +2,31 @@ import os
 
 SCORES = {
     'a': 1,
+    'b': 3,
+    'c': 3,
+    'd': 2,
     'e': 1,
+    'f': 4,
+    'g': 2,
+    'h': 4,
     'i': 1,
-    'o': 1,
-    'u': 1,
+    'j': 8,
+    'k': 5,
     'l': 1,
+    'm': 3,
     'n': 1,
+    'o': 1,
+    'p': 3,
+    'q': 9, # 10 - 1 (q is always qu. q is 10, u is 1, but both counted here)
     'r': 1,
     's': 1,
     't': 1,
-    'd': 2,
-    'g': 2,
-    'b': 3,
-    'c': 3,
-    'm': 3,
-    'p': 3,
-    'f': 4,
-    'h': 4,
+    'u': 1,
     'v': 4,
     'w': 4,
-    'y': 4,
-    'k': 5,
-    'j': 8,
     'x': 8,
-    'q': 9, # 10 - 1 (q is always qu, q is 10 and u is 1 but both counted here)
+    'y': 4,
     'z': 10,
-
 }
 
 

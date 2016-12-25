@@ -1,10 +1,10 @@
 <ul id="results">
   {% for result in results %}
-  <li>
-    <span style="color: {{ color_map[result.color] }}">{{ result.color }}</span> - {{ result.score }} points
+  <li class="result">
+    <span class="result-color" style="color: {{ color_map[result.color] }}">{{ result.color }}</span> - <span class="result-total-score">{{ result.score }}</span> points
     <ul>
       {% for word in result.words %}
-      <li><span class="result-word">{{ word.letters() | upper }}</span> - {{ word.score() }} points</li>
+      <li><span class="result-word">{{ word.letters() | upper }}</span> - <span class="result-word-score">{{ word.score() }}</span> points</li>
       {% endfor %}
     </ul>
   </li>

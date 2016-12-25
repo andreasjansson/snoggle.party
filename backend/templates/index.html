@@ -6,48 +6,48 @@
   }
 </style>
 
-    {% if error %}
-    <p id="error">{{ error }}</p>
-    {% endif %}
+{% if error %}
+<p id="error">{{ error }}</p>
+{% endif %}
 
-    <div class="container">
-      <div class="row">
-        <div class="col-xs-8">
-          <h1><img src="images/logo.png" alt="Snoggle" id="logo" /></h1>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-xs-12">
-          <h2>Create or join a game</h2>
-        </div>
-      </div>
-
-      <form action="/join" method="POST">
-        <div class="row">
-          <div class="col-xs-12">
-            <p><label for="game-id">Game ID</label></p>
-          </div>
-          <div class="clearfix col-xs-12 col-sm-9">
-            <input type="text" id="game-id" name="game-id" class="word-input" />
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-xs-12">
-            <p>Choose color</p>
-          </div>
-          {% for color in colors %}
-          <div class="col-sm-2 col-xs-4">
-            <button class="color-select" style="background-color: {{ color_map[color] }}" type="submit" name="color" value="{{ color }}">{{ color | capitalize }}</button>
-          </div>
-          {% endfor %}
-        </div>
-      </form>
-
-      {% include "javascripts.html" %}
-      <script type="text/javascript">
-        $(index());
-      </script>
-
+<div id="index-page" class="container">
+  <div class="row">
+    <div class="col-xs-8">
+      <h1><img src="images/logo.png" alt="Snoggle" id="logo" /></h1>
     </div>
-  </body>
+  </div>
+  <div class="row">
+    <div class="col-xs-12">
+      <h2>Create or join a game</h2>
+    </div>
+  </div>
+
+  <form action="/join" method="POST">
+    <div class="row">
+      <div class="col-xs-12">
+        <p><label for="game-id">Game ID</label></p>
+      </div>
+      <div class="clearfix col-xs-12 col-sm-9">
+        <input type="text" id="game-id" name="game-id" class="word-input" />
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-xs-12">
+        <p>Choose color</p>
+      </div>
+      {% for color in colors %}
+      <div class="col-sm-2 col-xs-4">
+        <button class="color-select" style="background-color: {{ color_map[color] }}" type="submit" name="color" value="{{ color }}">{{ color | capitalize }}</button>
+      </div>
+      {% endfor %}
+    </div>
+  </form>
+
+  {% include "javascripts.html" %}
+  <script type="text/javascript">
+    $(index());
+  </script>
+
+</div>
+</body>
 </html>

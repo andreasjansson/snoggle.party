@@ -28,7 +28,6 @@ COLOR_MAP = OrderedDict((
 
 
 app = Flask(__name__, static_url_path='')
-app.logger.setLevel(logging.INFO)
 app.secret_key = 'super super secret key'
 socketio = SocketIO(app) #, logger=True, engineio_logger=True)
 games = {}
@@ -98,7 +97,13 @@ def require_game_socket(f):
 @app.route('/')
 def index():
     if 'game_id' in session and session['game_id'] in games:
-        return redirect(url_for('main'))
+        game = games[session['game_id']]
+        if 'color' in session and session['color'] not in game.players:
+            # session variables hanging over from quit game
+            del session['game_id']
+            del session['color']
+        else:
+            return redirect(url_for('main'))
 
     error = session.pop('error', None)
     return render_template('index.html', colors=COLOR_MAP.keys(), color_map=COLOR_MAP, error=error)
@@ -107,7 +112,6 @@ def index():
 @app.route('/join', methods=['POST'])
 def join():
     game_id = request.form['game-id']
-
     if not game_id:
         session['error'] = 'Missing Game ID'
         return redirect(url_for('index'))
@@ -143,8 +147,8 @@ def join():
         if 'board_width' in session:
             game.width = session['board_width']
 
+    # these three lines are "atomic", must always happen together
     game.add_player(color)
-
     session['color'] = color
     session['game_id'] = game_id
 

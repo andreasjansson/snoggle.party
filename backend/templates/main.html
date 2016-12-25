@@ -31,7 +31,9 @@
       <div class="col-xs-12 col-sm-4" id="scores">
         <ul>
           {% for player in players %}
-          <li><span style="color: {{ color_map[player.color] }}">{{ player.color }}</span> - {{ player.wins }} wins, {{ player.score }} points</li>
+          <li>
+            <span class="score-color" style="color: {{ color_map[player.color] }}">{{ player.color }}</span> - <span class="score-wins">{{ player.wins }}</span> wins, <span class="score-points">{{ player.score }}</span> points
+          </li>
           {% endfor %}
         </ul>
       </div>
