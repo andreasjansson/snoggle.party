@@ -98,6 +98,18 @@ class Game(object):
     def end_round(self):
         self.state = State.ENDED
         self.update_player_scores()
+        self.teach_robots_new_words()
+
+    def teach_robots_new_words(self):
+        all_words = set()
+        for w in self.words:
+            all_words.add(w.letters())
+        for p in self.players.values():
+            if p.is_bot:
+                for w in all_words:
+                    if w not in p.vocabulary:
+                        p.learn_word(w)
+                        print 'bot learned new word', w
 
     def player_at(self, x, y):
         cell = self.board[(x, y)]

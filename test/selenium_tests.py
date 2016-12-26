@@ -356,7 +356,7 @@ class IndexTests(SnoggleTestCase):
         self.assertEquals(browser1.find_element_by_id('game-id').text, 'foo')
 
         players = browser1.find_elements_by_css_selector(
-            '#players li')
+            '#players li.player')
 
         self.assertEquals(len(players), 1)
         self.assertEquals(players[0].text, 'orange')
@@ -368,10 +368,10 @@ class IndexTests(SnoggleTestCase):
         self.assertEquals(browser2.find_element_by_id('game-id').text, 'foo')
 
         players1 = browser1.find_elements_by_css_selector(
-            '#players li')
+            '#players li.player')
 
         players2 = browser2.find_elements_by_css_selector(
-            '#players li')
+            '#players li.player')
 
         self.assertEquals([p.text for p in players1], ['orange', 'teal'])
 

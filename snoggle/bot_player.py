@@ -254,6 +254,11 @@ class BotPlayer(AbstractPlayer):
             self.clear_word()
         self.thought_word = None
 
+    def learn_word(self, w):
+        self.vocabulary.add(w)
+        for i in range(1, 1 + len(w)):
+            self.prefix_vocabulary.add(w[:i])
+
 
 class BotSelectAction(namedtuple('BotSelectAction', 'x y')):
     pass
