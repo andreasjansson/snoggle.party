@@ -1,6 +1,6 @@
 #!/bin/bash
 
-pushd ../backend/static/images
+pushd ../snoggle/static/images
 
 function colorize-thinking {
     color=$1

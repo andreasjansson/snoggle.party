@@ -2,6 +2,7 @@ from collections import namedtuple
 from contextlib import contextmanager
 import math
 import time
+import signal
 import subprocess
 from unittest2 import TestCase
 from pyvirtualdisplay import Display
@@ -25,11 +26,11 @@ def setUpModule(self):
     display.start()
 
     print 'creating browser'
-    browser1 = SnoggleBrowser()
+    browser1 = make_browser()
     print 'creating browser'
-    browser2 = SnoggleBrowser()
+    browser2 = make_browser()
     print 'creating browser'
-    browser3 = SnoggleBrowser()
+    browser3 = make_browser()
     browsers = [browser1, browser2, browser3]
 
 def tearDownModule(self):
@@ -37,6 +38,21 @@ def tearDownModule(self):
         b.quit()
     display.stop()
 
+
+class TimeoutError(Exception):
+    pass
+
+class timeout:
+    def __init__(self, seconds=1, error_message='Timeout'):
+        self.seconds = seconds
+        self.error_message = error_message
+    def handle_timeout(self, signum, frame):
+        raise TimeoutError(self.error_message)
+    def __enter__(self):
+        signal.signal(signal.SIGALRM, self.handle_timeout)
+        signal.alarm(self.seconds)
+    def __exit__(self, type, value, traceback):
+        signal.alarm(0)
 
 class SnoggleBrowser(webdriver.Chrome):
 
@@ -113,8 +129,8 @@ class SnoggleBrowser(webdriver.Chrome):
         for dice in dices:
             value = dice.get_attribute('value')
             letter, position = value.split('|')
-            y, x = position.split(',')
-            y, x = int(x), int(y)
+            x, y = position.split(',')
+            x, y = int(x), int(y)
             color = dice.get_attribute('data-color')
             if color == 'NO-COLOR':
                 color = None
@@ -134,7 +150,7 @@ class SnoggleBrowser(webdriver.Chrome):
 
     def dice_at(self, x, y):
         return self.find_element_by_css_selector(
-            'button[data-position="%d,%d"]' % (y, x))
+            'button[data-position="%d,%d"]' % (x, y))
 
     def color_at(self, x, y):
         color = self.dice_at(x, y).get_attribute('data-color')
@@ -195,7 +211,7 @@ class SnoggleBrowser(webdriver.Chrome):
 
     def wait_for_dice(self, x, y, color):
         self.wait_for_css_selector(
-            '.dice[data-position="%d,%d"][data-color="%s"]' % (y, x, 'NO-COLOR' if color is None else color))
+            '.dice[data-position="%d,%d"][data-color="%s"]' % (x, y, 'NO-COLOR' if color is None else color))
 
     def wait_for_turn(self):
         self.wait_for_css_selector('#clear-control')
@@ -258,6 +274,17 @@ class SnoggleBrowser(webdriver.Chrome):
         self.wait_for_css_selector('#index-page')
 
 
+def make_browser(num_attempts=5):
+    for i in range(num_attempts):
+        try:
+            with timeout(seconds=5):
+                return SnoggleBrowser()
+        except TimeoutError as e:
+            print 'browser creation timed out, trying again'
+            if i == num_attempts - 1:
+                raise e
+
+
 def start_game(colors=('red', 'teal'), game_id='foo', board_width=5,
                turn_time=TURN_TIME, num_turns=3):
     for b, color in zip(browsers, colors):
@@ -295,10 +322,11 @@ class SnoggleTestCase(TestCase):
     def setUp(self):
         print 'starting snoggle process'
         self.snoggle_process = subprocess.Popen(
-            ['python', 'server.py', '--deterministic'],
+            ['python', 'snoggle/server.py', '--deterministic'],
             #stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             universal_newlines=True,
-            cwd='/opt/snoggle/backend')
+            env={'PYTHONPATH': '.'},
+            cwd='/opt/snoggle')
         time.sleep(3)
 
     def tearDown(self):
@@ -328,7 +356,7 @@ class IndexTests(SnoggleTestCase):
         self.assertEquals(browser1.find_element_by_id('game-id').text, 'foo')
 
         players = browser1.find_elements_by_css_selector(
-            '#players li')
+            '#players li.player')
 
         self.assertEquals(len(players), 1)
         self.assertEquals(players[0].text, 'orange')
@@ -340,10 +368,10 @@ class IndexTests(SnoggleTestCase):
         self.assertEquals(browser2.find_element_by_id('game-id').text, 'foo')
 
         players1 = browser1.find_elements_by_css_selector(
-            '#players li')
+            '#players li.player')
 
         players2 = browser2.find_elements_by_css_selector(
-            '#players li')
+            '#players li.player')
 
         self.assertEquals([p.text for p in players1], ['orange', 'teal'])
 
@@ -537,13 +565,13 @@ class ClearTests(SnoggleTestCase):
         start_game()
         browser1.click_dice(0, 0)
         browser1.click_dice(1, 0)
-        self.assertEquals(browser1.get_board()[1][0][1], 'red')
+        self.assertEquals(browser1.color_at(1, 0), 'red')
         self.assertEquals(browser1.get_word(), 'PC')
 
         browser1.click_clear()
         browser1.wait_for_dice(1, 0, None)
 
-        self.assertEquals(browser1.get_board()[1][0][1], None)
+        self.assertEquals(browser1.color_at(1, 0), None)
         self.assertEquals(browser1.get_word(), '')
 
     def test_clear_other_players_letters(self):
@@ -559,9 +587,9 @@ class ClearTests(SnoggleTestCase):
         browser2.click_clear()
         browser2.wait_for_dice(1, 0, None)
 
-        self.assertEquals(browser2.get_board()[1][0][1], None)
-        self.assertEquals(browser2.get_board()[1][1][1], 'red')
-        self.assertEquals(browser2.get_board()[1][2][1], None)
+        self.assertEquals(browser2.color_at(1, 0), None)
+        self.assertEquals(browser2.color_at(1, 1), 'red')
+        self.assertEquals(browser2.color_at(1, 2), None)
         self.assertEquals(browser2.get_word(), '')
 
     def test_clear_guess_reverts_guess_mode(self):

@@ -11,6 +11,6 @@ RUN     pip install \
 
 ADD     . /opt/snoggle
 
-WORKDIR /opt/snoggle/backend
+WORKDIR /opt/snoggle/snoggle
 
 CMD     python server.py

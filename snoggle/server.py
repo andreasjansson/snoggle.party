@@ -3,19 +3,18 @@
 # * make skip button submit
 # * better message/error graphics
 
+import random
 import argparse
-import sys
 from collections import OrderedDict
-import datetime
 from functools import wraps
 from flask import (
-    Flask, session, redirect, url_for, request, render_template, send_from_directory, jsonify
+    Flask, session, redirect, url_for, request, render_template, jsonify
 )
-from flask_socketio import SocketIO, emit, join_room, leave_room
+from flask_socketio import SocketIO, join_room, leave_room
 import logging
 
-from game import Game
-import dictionary
+from snoggle.game import Game
+from snoggle.bot_player import BotSelectAction, BotSubmitAction
 
 COLOR_MAP = OrderedDict((
     ('red', '#FF4136'),
@@ -151,7 +150,7 @@ def join():
             game.width = session['board_width']
 
     # these three lines are "atomic", must always happen together
-    game.add_player(color)
+    game.add_human_player(color)
     session['color'] = color
     session['game_id'] = game_id
 
@@ -168,6 +167,32 @@ def wait(game, player):
 
     state = game_state(game, player)
     return render_template('wait.html', **state)
+
+
+@app.route('/add-bot', methods=['GET', 'POST'])
+@require_game(False)
+def add_bot(game, player):
+    if game.started():
+        return redirect(url_for('main'))
+
+    available_colors = set(COLOR_MAP.keys()) - set(game.players.keys())
+    color = random.sample(available_colors, 1)[0]
+    game.add_bot(color)
+    state = game_state(game, player)
+    return redirect(url_for('wait'))
+
+
+@app.route('/delete-bot', methods=['GET', 'POST'])
+@require_game(False)
+def delete_bot(game, player):
+    if game.started():
+        return redirect(url_for('main'))
+
+    color = request.args['color']
+    game.delete_bot(color)
+
+    state = game_state(game, player)
+    return redirect(url_for('wait'))
 
 
 @app.route('/options', methods=['GET'])
@@ -216,7 +241,7 @@ def start(game, player):
         return redirect(url_for('main'))
 
     game.start_round()
-    for p in game.players.values():
+    for p in game.human_players():
         if p.sid:
             socketio.emit('start', room=p.sid)
 
@@ -240,23 +265,7 @@ def select(game, player):
     x, y = request.form['position'].split('|')[1].split(',')
     x, y = int(x), int(y)
 
-    cell = game.board[(x, y)]
-
-    if player.is_guessing:
-        player.guess.append(cell)
-
-    else:
-        if (x, y) in player.seen_positions:
-            return redirect(url_for('main'))
-
-        if not player.is_adjacent_to_last_position((x, y)):
-            return redirect(url_for('main'))
-
-        player.seen_positions.add((x, y))
-
-        if not game.player_at(x, y):
-            player.last_position = (x, y)
-            player.word.append(cell)
+    game.player_select_cell(player, x, y)
 
     return redirect(url_for('main'))
 
@@ -267,36 +276,15 @@ def select_ajax(game, player):
     x, y = request.form['position'].split('|')[1].split(',')
     x, y = int(x), int(y)
 
-    cell = game.board[(x, y)]
+    game.player_select_cell(player, x, y)
 
-    def json_response():
-        return jsonify({
-            'word': (player.guess.letters()
-                     if player.is_guessing
-                     else player.word.letters()),
-            'board_html': render_template('board.html',
-                                          **game_state(game, player))
-        })
-
-    if player.is_guessing:
-        player.guess.append(cell)
-
-        return json_response()
-
-    else:
-        if (x, y) in player.seen_positions:
-            return json_response()
-
-        if not player.is_adjacent_to_last_position((x, y)):
-            return json_response()
-
-        player.seen_positions.add((x, y))
-
-        if not game.player_at(x, y):
-            player.last_position = (x, y)
-            player.word.append(cell)
-
-        return json_response()
+    return jsonify({
+        'word': (player.guess.letters()
+                 if player.is_guessing
+                 else player.word.letters()),
+        'board_html': render_template('board.html',
+                                      **game_state(game, player))
+    })
 
 
 @app.route('/submit', methods=['POST'])
@@ -306,7 +294,7 @@ def submit(game, player):
         player.error = 'You have\'t made a word yet'
         return redirect(url_for('main'))
 
-    check_word_and_guess(game, player)
+    game.check_word_and_guess(player)
     return redirect(url_for('main'))
 
 
@@ -352,7 +340,7 @@ def quit_game(game, player):
     del session['game_id']
     del session['color']
 
-    for p in game.players.values():
+    for p in game.human_players():
         if p.sid and p != player:
             socketio.emit('game quit', {'color': player.color}, room=p.sid)
 
@@ -378,64 +366,51 @@ def socket_disconnect(game, player, room):
     print('Client disconnected')
 
 
-def check_word_and_guess(game, player, end_of_turn=False):
-    word = player.guess if player.is_guessing else player.word
-
-    if len(word) == 0:
-        return
-
-    letters = word.letters().upper()
-    score = dictionary.score(word)
-
-    if player.is_guessing:
-        existing_word = game.get_existing_word(word)
-
-        if existing_word:
-            if player.color in existing_word.previous_owner_colors:
-                player.set_error('You owned that before!')
-                player.clear_guess()
-
-            else:
-                previous_owner = existing_word.player
-                existing_word.steal(player)
-                player.set_message('You guessed %s\'s word %s (%d points)!' % (
-                    previous_owner.color, letters, score))
-                previous_owner.set_message('%s guessed your word %s' % (
-                    player.color.capitalize(), letters))
-
-                if not end_of_turn:
-                    game.next_turn()
-
-        else:
-            if not end_of_turn:
-                player.set_error('Nope, no one has that word!')
-                player.clear_guess()
-
-    else:
-        if dictionary.contains(word):
-            game.add_word(word)
-            player.set_message('%s: %d points!' % (letters, score))
-            if not end_of_turn:
-                game.next_turn()
-
-        else:
-            player.clear_word()
-            if not end_of_turn:
-                player.set_error('%s is not a word' % letters)
-
-
 def turn_time_out(game):
-    check_word_and_guess(game, game.player_turn(), end_of_turn=True)
+    if game.player_turn().is_bot:
+        take_bot_action(game, game.player_turn())
+    else:
+        game.check_word_and_guess(game.player_turn(), end_of_turn=True)
+
     game.next_turn()
 
-    print 'turn time out'
+    #print 'turn time out'
 
     with app.app_context():
         broadcast_emit_game(game, 'main')
 
 
+def take_bot_action(game, bot):
+    attempt = 0
+    for _ in range(100):
+        if attempt >= bot.num_attempts:
+            return
+
+        action = bot.take_action(game.board_view(bot))
+
+        #print 'ACTION', action
+
+        if action is None:
+            attempt +=1
+            continue
+
+        if isinstance(action, BotSelectAction):
+            success = game.player_select_cell(bot, action.x, action.y)
+            if not success:
+                bot.action_failed()
+
+        elif isinstance(action, BotSubmitAction):
+            success = game.check_word_and_guess(bot, end_of_turn=True)
+            if success:
+                bot.submit_successful()
+                return
+            else:
+                bot.action_failed()
+                attempt += 1
+
+
 def broadcast_emit_game(game, template):
-    for p in game.players.values():
+    for p in game.human_players():
         if p.sid:
             if p.color == 'green':
                 print '>>>>>>>> EMITTING GAME UPDATE'
@@ -455,9 +430,9 @@ def game_state(game, player):
                          if p != player],
         'player': player,
         'word_length': len(player.guess if player.is_guessing else player.word),
-        'board_view': (game.full_board_view_dict()
+        'board_view': (game.full_board_view()
                        if game.ended()
-                       else game.board_view_dict(player)),
+                       else game.board_view(player)),
         'turn': game.player_turn(),
         'is_players_turn': game.player_turn() == player,
         'results': game.gather_results() if game.ended() else None,
@@ -467,8 +442,8 @@ def game_state(game, player):
         'game_id': game.game_id,
         'message': player.pop_message(),
         'color_map': COLOR_MAP,
-        'turn_time_left': '%.1f' % game.turn_time_left(),
-        'turn_time_percent': round(100.0 * game.turn_time_left() /
+        'turn_time_left': '%.1f' % game.turn_time_left_display(),
+        'turn_time_percent': round(100.0 * game.turn_time_left_display() /
                                    game.max_turn_time, 2),
         'turn_time_total': game.max_turn_time,
         'board_width': game.width,
