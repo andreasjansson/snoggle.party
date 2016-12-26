@@ -29,8 +29,17 @@
         <p>Players:</p>
         <ul id="players">
           {% for player in players %}
-          <li style="color: {{ color_map[player.color] }}">{{ player.color }}</li>
+          <li>
+            {% if player.is_bot %}🤖 {% endif %}
+            <span style="color: {{ color_map[player.color] }}">{{ player.color }}</span>
+            {% if player.is_bot %}
+            <em><a href="/delete-bot?color={{ player.color }}">Delete bot</a></em>
+            {% endif %}
+          </li>
           {% endfor %}
+          <li id="add-bot">
+            🤖 <em><a href="/add-bot">Add bot</a></em>
+          </li>
         </ul>
 
         {% if num_players > 1 %}

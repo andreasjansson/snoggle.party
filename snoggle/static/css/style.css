@@ -202,3 +202,11 @@ ul {
 #footer {
     margin-top: 30px;
 }
+
+#add-bot {
+    margin-top: 10px;
+}
+
+#add-bot a {
+    color: #fff;
+}

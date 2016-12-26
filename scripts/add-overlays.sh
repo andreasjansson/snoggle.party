@@ -1,6 +1,6 @@
 #!/bin/bash
 
-pushd ../backend/static/images/letters-shadow
+pushd ../snoggle/static/images/letters-shadow
 
 for f in *.png
 do

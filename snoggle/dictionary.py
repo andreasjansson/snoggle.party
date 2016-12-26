@@ -39,13 +39,17 @@ def read_words():
 
     return words
 
+def read_common_words(known_words):
+    cwd = os.path.dirname(os.path.abspath(__file__))
+    words = []
+    with open(os.path.join(cwd, 'common_words.tsv')) as f:
+        for line in f:
+            word = line.split('\t')[0].lower()
+            if word in known_words:
+                words.append(word)
+
+    return words
+
 
 WORDS = read_words()
-
-
-def contains(word):
-    return word.letters().lower() in WORDS
-
-
-def score(word):
-    return sum([SCORES[c.lower()] for c in word.letters()])
+COMMON_WORDS = read_common_words(WORDS)

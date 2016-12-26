@@ -8,7 +8,7 @@
                 type="submit"
                 name="position"
                 data-letter="{{ cell.letter }}"
-                data-position="{{ cell.position }}"
+                data-position="{{ cell.data_position }}"
                 data-color="{% if cell.color %}{{ cell.color }}{% else %}NO-COLOR{% endif %}"
                 {% if not is_players_turn or cell.disabled %}
                 disabled="disabled"
