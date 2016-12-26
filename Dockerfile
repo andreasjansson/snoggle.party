@@ -11,6 +11,8 @@ RUN     pip install \
 
 ADD     . /opt/snoggle
 
-WORKDIR /opt/snoggle/snoggle
+WORKDIR /opt/snoggle
 
-CMD     python server.py
+ENV     PYTHONPATH=/opt/snoggle
+
+CMD     python snoggle/server.py
