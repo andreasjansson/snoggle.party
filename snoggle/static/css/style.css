@@ -50,8 +50,10 @@ button {
 }
 
 .animate-blur {
-    transition: all 1s ease-in;
-    filter: blur(10px);
+  -webkit-transform: rotate(360deg);
+  transform: rotate(360deg);
+  -webkit-transition: -webkit-transform .8s ease-out;
+  transition: transform .8s ease-out;
 }
 
 #board .dice-image {

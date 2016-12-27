@@ -34,6 +34,8 @@ function handleSelectResponse(data) {
 }
 
 function selectLetter(e) {
+    e.preventDefault();
+
     var $button = $($(e.target).closest('button'));
 
     if ($button.attr('disabled')) {
@@ -118,6 +120,8 @@ function isGuessing() {
 }
 
 function submitGuess(e) {
+    e.preventDefault();
+
     var $button = $($(e.target).closest('a'));
     var color = $button.data('color');
     var word = $('#guessed-word').text();
@@ -217,6 +221,8 @@ function showExplosion(innerHtml) {
 }
 
 function ajaxClick(e) {
+    e.preventDefault();
+
     var $a = $(e.target).closest('a');
 
     $.get($a.attr('href'));
@@ -230,10 +236,10 @@ function main() {
     socket.on('game updated', handleGameUpdate);
     socket.on('game quit', handleGameQuit);
 
-    $('body').on('click', '#board button', selectLetter);
-    $('body').on('click', '#submit', submitWord);
-    $('body').on('click', '#controls a', ajaxClick);
-    $('body').on('click', '#next-round', ajaxClick);
+    $('body').on('touchstart mousedown', '#board button', selectLetter);
+    $('body').on('touchstart mousedown', '#submit', submitWord);
+    $('body').on('touchstart mousedown', '#controls a', ajaxClick);
+    $('body').on('touchstart mousedown', '#next-round', ajaxClick);
 
     startCountdown();
     setupGuessButton();
