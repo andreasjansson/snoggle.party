@@ -247,9 +247,8 @@ class Game(object):
                 else:
                     previous_owner = existing_word.player
                     existing_word.steal(player)
-                    player.set_message('You guessed %s\'s word %s (%d points)!' % (
-                        previous_owner.color, letters, word.score()))
-                    previous_owner.set_message('%s guessed your word %s' % (
+                    player.set_steal_message('You stole %s!' % letters)
+                    previous_owner.set_steal_message('%s stole %s!' % (
                         player.color.capitalize(), letters))
 
                     if not end_of_turn:
@@ -264,7 +263,8 @@ class Game(object):
         else:
             if word.is_in_dictionary():
                 self.add_word(word)
-                player.set_message('%s: %d points!' % (letters, word.score()))
+                player.set_success_message(
+                    '%s: %d points!' % (letters, word.score()))
                 if not end_of_turn:
                     self.next_turn()
                 return True

@@ -65,8 +65,11 @@ class AbstractPlayer(object):
             return message
         return None
 
-    def set_message(self, text):
-        self.message = Message(text, type='message')
+    def set_success_message(self, text):
+        self.message = Message(text, type='success-message')
+
+    def set_steal_message(self, text):
+        self.message = Message(text, type='steal-message')
 
     def set_error(self, text):
         self.message = Message(text, type='error')

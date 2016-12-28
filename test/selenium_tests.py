@@ -195,7 +195,7 @@ class SnoggleBrowser(webdriver.Chrome):
             'data-player-color')
 
     def click_word_submit(self):
-        self.find_element_by_css_selector('#submit button').click()
+        self.find_element_by_css_selector('#submit').click()
 
     def submit_word(self, *positions):
         for x, y in positions:

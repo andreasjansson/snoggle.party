@@ -287,7 +287,7 @@ def select_ajax(game, player):
     })
 
 
-@app.route('/submit', methods=['POST'])
+@app.route('/submit', methods=['GET', 'POST'])
 @require_game(emit='main', turn=True, playing=True)
 def submit(game, player):
     if len(player.guess if player.is_guessing else player.word) == 0:

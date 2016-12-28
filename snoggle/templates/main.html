@@ -1,6 +1,10 @@
 {% include "header.html" %}
 
 <div id="wrapper" data-player-color="{{ player.color }}">
+  {% if message %}
+  <p class="message" id="{{ message.type }}">{{ message.text }}</p>
+  {% endif %}
+
   <div class="container">
 
     <div class="row">
@@ -8,11 +12,6 @@
         <h1><img src="images/logo.png" alt="Snoggle" id="logo" /></h1>
       </div>
     </div>
-
-    {% if message %}
-    <p id="{{ message.type }}">{{ message.text }}</p>
-    {% endif %}
-
     <div class="row">
 
       <div id="board"

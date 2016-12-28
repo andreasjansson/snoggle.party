@@ -1,6 +1,7 @@
 <div class="row" id="word-row">
 
-  <div class="col-sm-11 col-xs-8 col-xs-offset-2 col-sm-offset-0">
+  <div id="word-wrapper"
+       class="col-sm-12 col-xs-8 col-xs-offset-2 col-sm-offset-0">
     <div data-time-left="{{ turn_time_left }}"
          data-total-time="{{ turn_time_total }}"
          style="background-color: {{ color_map[turn.color] }};
@@ -23,27 +24,6 @@
       {% endif %}
     </p>
   </div>
-  <div class="col-sm-1 col-xs-2" id="submit">
-    <form action="/submit" method="POST">
-      {% if is_players_turn %}
-      <button id="submit-word"
-              name="submit" value="submit"
-              {% if word_length == 0 %}
-              disabled="disabled"
-              {% endif %}>
-        {% if player.is_guessing %}
-        <img src="/images/thinking.png" alt="Submit guess!" />
-        {% else %}
-        <img src="/images/rocket.png" alt="Submit word!" />
-        {% endif %}
-      </button>
-      {% else %}
-      <button disabled="disabled" name="submit" value="submit">
-        <img src="/images/rocket-disabled.png" />
-      </button>
-      {% endif %}
-    </form>
-  </div>
 
 </div>
 
@@ -65,8 +45,12 @@
       </a>
     </div>
     <div class="col-xs-4">
-      <a href="/pass">
-        <img src="/images/pass.png" alt="Pass turn" />
+      <a id="submit" href="/submit">
+        {% if player.is_guessing %}
+        <img src="/images/rocket-thinking.png" alt="Submit guess!" />
+        {% else %}
+        <img src="/images/rocket.png" alt="Submit word!" />
+        {% endif %}
       </a>
     </div>
   </div>
