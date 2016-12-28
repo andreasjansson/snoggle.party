@@ -139,6 +139,9 @@ function wait() {
     $('body').on('click', '.options a', ajaxClick);
 
     preloadAllLetters();
+    preloadImage('/images/blowfish.png');
+    preloadImage('/images/shark.png');
+    preloadImage('/images/background.jpg');
 }
 
 function index() {
