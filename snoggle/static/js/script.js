@@ -89,6 +89,28 @@ function ajaxClick(e) {
     return false;
 }
 
+function preloadImage(url) {
+    var img = new Image();
+    img.src = url;
+}
+
+
+function preloadAllLetters() {
+    var colors = ['red', 'green', 'purple', 'orange', 'yellow', 'teal'];
+    var letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
+                   'L', 'M', 'N', 'O', 'P', 'Qu', 'R', 'S', 'T', 'U', 'V',
+                   'W', 'X', 'Y', 'Z'];
+    var folder = '/images/letters-shadow/';
+    for (var i = 0; i < letters.length; i ++) {
+        var letter = letters[i];
+        preloadImage(folder + letter + '.png');
+        for (var j = 0; j < colors.length; j ++) {
+            var color = colors[j];
+            preloadImage(folder + letter + '-with-' + color + '.png');
+        }
+    }
+}
+
 function main() {
     connectSocketIO();
 
@@ -115,6 +137,8 @@ function wait() {
     });
 
     $('body').on('click', '.options a', ajaxClick);
+
+    preloadAllLetters();
 }
 
 function index() {

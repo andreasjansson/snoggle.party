@@ -3,6 +3,7 @@
 # * make skip button submit
 # * better message/error graphics
 
+from datetime import timedelta
 import random
 import argparse
 from collections import OrderedDict
@@ -28,6 +29,7 @@ COLOR_MAP = OrderedDict((
 
 app = Flask(__name__, static_url_path='')
 app.secret_key = 'super super secret key'
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 365
 socketio = SocketIO(app) #, logger=True, engineio_logger=True)
 games = {}
 

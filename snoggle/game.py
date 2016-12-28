@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import time
 import random
 from collections import OrderedDict, namedtuple, defaultdict
@@ -257,7 +259,7 @@ class Game(object):
 
             else:
                 if not end_of_turn:
-                    player.set_error('Nope, no one has that word!')
+                    player.set_error(u'Nope 😞')
                     player.clear_guess()
 
         else:
