@@ -2,3 +2,4 @@
 .DS_Store
 *_flymake.py
 test/.noseids
+*.egg-info
