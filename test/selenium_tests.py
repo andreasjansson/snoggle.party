@@ -385,16 +385,16 @@ class IndexTests(SnoggleTestCase):
         browser3.fill_game_id('foo')
         browser3.click_color('orange')
 
-        error = browser3.find_elements_by_css_selector('.error')[0]
+        error = browser3.find_elements_by_css_selector('#error')[0]
         self.assertEquals(error.text, 'Game has already started')
 
     def test_join_game_no_game_id(self):
         browser1.home()
         browser1.click_color('red')
 
-        browser1.wait_for_css_selector('.error')
+        browser1.wait_for_css_selector('#error')
 
-        error = browser1.find_elements_by_css_selector('.error')[0]
+        error = browser1.find_elements_by_css_selector('#error')[0]
         self.assertEquals(error.text, 'Missing Game ID')
 
     def test_join_game_existing_color(self):
@@ -407,9 +407,9 @@ class IndexTests(SnoggleTestCase):
         browser2.fill_game_id('foo')
         browser2.click_color('red')
 
-        browser2.wait_for_css_selector('.error')
+        browser2.wait_for_css_selector('#error')
 
-        error = browser2.find_elements_by_css_selector('.error')[0]
+        error = browser2.find_elements_by_css_selector('#error')[0]
         self.assertEquals(error.text, 'red is already taken')
 
 
