@@ -8,14 +8,22 @@ body {
     font-weight: bold;
     color: #fff;
     text-shadow:
-      -1px -1px 0 #222,
-      1px -1px 0 #222,
-      -1px 1px 0 #222,
-      1px 1px 0 #222;
+    -1px -1px 0 #222,
+    1px -1px 0 #222,
+    -1px 1px 0 #222,
+    1px 1px 0 #222;
     background-image: url("/images/background.jpg");
     background-size: cover;
     min-height: 100%;
     background-attachment: fixed;
+}
+
+a {
+    color: #f179ff;
+}
+
+a:hover {
+    color: #f179ff;
 }
 
 #logo {
@@ -50,10 +58,10 @@ button {
 }
 
 .animate-spin {
-  -webkit-transform: rotate(360deg);
-  transform: rotate(360deg);
-  -webkit-transition: -webkit-transform .8s ease-out;
-  transition: transform .8s ease-out;
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+    -webkit-transition: -webkit-transform .8s ease-out;
+    transition: transform .8s ease-out;
 }
 
 #board .dice-image {
@@ -131,10 +139,10 @@ ul {
 #error {
     color: #ff4;
     text-shadow:
-      -3px -3px 0 #f44,
-      3px -3px 0 #f44,
-      -3px 3px 0 #f44,
-      3px 3px 0 #f44;
+    -3px -3px 0 #f44,
+    3px -3px 0 #f44,
+    -3px 3px 0 #f44,
+    3px 3px 0 #f44;
     transform: rotate(-10deg);
     animation: error 2s forwards;
 }
@@ -177,10 +185,10 @@ ul {
     animation: steal 2s forwards;
     color: #f44;
     text-shadow:
-      -3px -3px 0 #500,
-      3px -3px 0 #500,
-      -3px 3px 0 #500,
-      3px 3px 0 #500;
+    -3px -3px 0 #500,
+    3px -3px 0 #500,
+    -3px 3px 0 #500,
+    3px 3px 0 #500;
 }
 
 @keyframes steal {
@@ -217,10 +225,10 @@ ul {
     animation: success 2s forwards;
     color: white;
     text-shadow:
-        -3px -3px 0 #DD5,
-        3px -3px 0 #DD5,
-        -3px 3px 0 #DD5,
-        3px 3px 0 #DD5;
+    -3px -3px 0 #DD5,
+    3px -3px 0 #DD5,
+    -3px 3px 0 #DD5,
+    3px 3px 0 #DD5;
 }
 
 @keyframes success {
@@ -240,10 +248,10 @@ ul {
         color: white;
         filter: hue-rotate(0);
         text-shadow:
-            -3px -3px 0 #DD5,
-            3px -3px 0 #DD5,
-            -3px 3px 0 #DD5,
-            3px 3px 0 #DD5;
+        -3px -3px 0 #DD5,
+        3px -3px 0 #DD5,
+        -3px 3px 0 #DD5,
+        3px 3px 0 #DD5;
     }
     80% {
         opacity: 1;
@@ -260,10 +268,10 @@ ul {
     border: 0;
     margin: 0 15px 30px 15px;
     text-shadow:
-      -1px -1px 0 #222,
-      1px -1px 0 #222,
-      -1px 1px 0 #222,
-      1px 1px 0 #222;
+    -1px -1px 0 #222,
+    1px -1px 0 #222,
+    -1px 1px 0 #222,
+    1px 1px 0 #222;
 }
 
 #game-id {
@@ -297,6 +305,7 @@ ul {
 
 #footer {
     margin-top: 30px;
+    padding-bottom: 30px;
 }
 
 #add-bot {
@@ -311,8 +320,14 @@ ul {
     color: white;
 
     text-shadow:
-        -1px -1px 0 #f179ff,
-        1px -1px 0 #f179ff,
-        -1px 1px 0 #f179ff,
-        1px 1px 0 #f179ff;
+    -1px -1px 0 #f179ff,
+    1px -1px 0 #f179ff,
+    -1px 1px 0 #f179ff,
+    1px 1px 0 #f179ff;
+}
+
+.howto-image {
+    max-width: 90%;
+    margin: 5%;
+    box-shadow: 0px 0px 0px 10px rgba(255,255,255,.3);
 }

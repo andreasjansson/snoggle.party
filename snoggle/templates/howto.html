@@ -1,0 +1,128 @@
+{% include "header.html" %}
+
+<style>
+  body {
+  background-image: url("images/background-howto.jpg");
+  }
+</style>
+
+<div class="container" id="howto-page">
+
+  <div class="row">
+    <div class="col-xs-8">
+      <h1><a href="/"><img src="images/logo.png" alt="Snoggle" id="logo" /></a></h1>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-7 col-xs-12">
+      <p><a href="/">Snoggle</a> is like Boggle meets Battleship. You and your opponent(s) look for words on the same board, and if you think you know their words you can try to steal them. You can play against other humans or robots.</p>
+    </div>
+    <div class="hidden-sm hidden-md hidden-lg col-xs-12">
+      <img src="/images/howto-fish.png" />
+      <img src="/images/howto-fish.png" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-7 col-xs-12">
+      <p>First you have to create a new game. Go to <a href="http://snoggle.party">snoggle.party</a>, then enter a Game ID and pick a color. If you want to play against a friend, you have to both use the same Game ID to play together. If you play against a bot it doesn't matter.</p>
+    </div>
+    <div class="col-sm-5 col-xs-12">
+      <img class="howto-image" src="/images/howto1.png" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-7 col-xs-12">
+      <p>You have to wait on the next page until either a friend joins the same Game ID, or you add one or more bots to play against. In the meantime you can set some game options. When you have two or more players ready, hit "Start game!"</p>
+    </div>
+    <div class="col-sm-5 col-xs-12">
+      <img class="howto-image" src="/images/howto2.png" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-7 col-xs-12">
+      <p>
+        In the middle of the main screen is the board, filled with random letters. This is where you look for words. Words are made up of <em>adjacent</em> letters.
+      </p>
+      <p>
+        For example, in the board below, P, C, E, N, and E are adjacent to the selected U. Valid words on this board include CALF, QuIT, OTTER, PEARL, UP, etc. The dictionary is the standard Scrabble dictionary.
+      </p>
+    </div>
+    <div class="col-sm-5 col-xs-12">
+      <img class="howto-image" src="/images/howto3.png" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-7 col-xs-12">
+      <p>Snoggle is turn-based, so you can only do things when it's your turn. When it's not your turn, the countdown bar says "wait...".</p>
+    </div>
+    <div class="col-sm-5 col-xs-12">
+      <img class="howto-image" src="/images/howto4.png" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-7 col-xs-12">
+      <p>
+        When it is your turn, you create words by clicking or tapping the letters in order. The word is shown in the field with the countdown bar. When you're done with the word, hit the rocket icon to submit it.
+      </p>
+      <p>If the word exists, it's the other player's turn. If it doesn't, you can continue trying until your turn runs out of time. If you made a mistake you can hit the X icon to clear the word.
+      </p>
+    </div>
+    <div class="col-sm-5 col-xs-12">
+      <img class="howto-image" src="/images/howto5.png" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-7 col-xs-12">
+      <p>
+        Letters on the board can only be used once, in one word. If you select a letter and it turns the other player's color, it means they already used that letter and you can't use it again.
+      </p>
+      <p>
+        As you start seeing your opponent's letters, you might have an idea of what their words are. If you think you know, hit the thinking emoji icon, and click the letters in order. When you're done, hit the thinking-emoji-on-rocket icon to submit your guess. If you guessed right, you steal the word and your opponent can't steal it back.
+      </p>
+    </div>
+    <div class="col-sm-5 col-xs-12">
+      <img class="howto-image" src="/images/howto6.png" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-7 col-xs-12">
+      <p>
+        Each round has a number of turns, by default 3 per player (configurable in the options on the wait screen). After everyone has played their turns, the final score is tallied up by summing the scores for all the letters. Letters are worth 1 - 9 points, depending on how rare they are.
+      </p>
+      <p>
+        The winner of the round is the player with the highest score.
+      </p>
+    </div>
+    <div class="col-sm-5 col-xs-12">
+      <img class="howto-image" src="/images/howto7.png" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-7 col-xs-12">
+      <p>
+        You can play another round, and the scores will keep increasing. The game is over when one player hits "Quit game".
+      </p>
+    </div>
+  </div>
+
+  <div class="row" id="footer">
+    <div class="col-xs-12">
+      <a href="/">Start playing Snoggle!</a>
+    </div>
+  </div>
+
+</div>
+
+{% include "javascripts.html" %}
+
+</body>
+</html>
