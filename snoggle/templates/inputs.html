@@ -34,18 +34,18 @@
   <div class="col-sm-11 col-xs-8 col-xs-offset-2 col-sm-offset-0">
     <div class="col-xs-4">
       {% if not player.is_guessing %}
-      <a href="/start-guessing">
+      <a class="ajax-get" href="/start-guessing">
         <img src="/images/thinking.png" alt="Start guessing" id="start-guessing" />
       </a>
       {% endif %}
     </div>
     <div class="col-xs-4">
-      <a href="/clear" id="clear-control">
+      <a class="ajax-get" href="/clear" id="clear-control">
         <img src="/images/clear.png" alt="Clear word" />
       </a>
     </div>
     <div class="col-xs-4">
-      <a id="submit" href="/submit">
+      <a class="ajax-get" id="submit" href="/submit">
         {% if player.is_guessing %}
         <img src="/images/rocket-thinking.png" alt="Submit guess!" />
         {% else %}

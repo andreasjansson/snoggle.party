@@ -12,6 +12,9 @@ from snoggle.word import score_words
 from snoggle.board import BoardView, make_board_view_cell, BoardCell
 
 
+MAX_IDLE_TIME = 60 * 60 * 24
+
+
 class Game(object):
 
     def __init__(self, game_id,
@@ -30,7 +33,7 @@ class Game(object):
         self.words = []
         self.state = State.NOT_STARTED
         self.turn = 0
-        self.turn_start_time = 0
+        self.turn_start_time = time.time()
         self.turn_end_time = float('infinity')
         self.turns_left = 0
 
@@ -51,8 +54,6 @@ class Game(object):
             self.turn = 0
         else:
             self.turn = random.randint(0, len(self.players) - 1)
-
-        print '>>>>>>>>>>>>>>>> start round: %d' % self.turn
 
         self.state = State.PLAYING
 
@@ -95,8 +96,6 @@ class Game(object):
             self.turn_start_time = time.time()
             self.turn_end_time = self.get_turn_end_time()
 
-        print '>>>>>>>>>>>>>>>> next turn: %d' % self.turn
-
     def end_round(self):
         self.state = State.ENDED
         self.update_player_scores()
@@ -111,7 +110,6 @@ class Game(object):
                 for w in all_words:
                     if w not in p.vocabulary:
                         p.learn_word(w)
-                        print 'bot learned new word', w
 
     def player_at(self, x, y):
         cell = self.board[(x, y)]
@@ -208,6 +206,9 @@ class Game(object):
 
     def end(self):
         self.state = State.ENDED
+
+    def is_too_old(self):
+        return time.time() - self.turn_start_time > MAX_IDLE_TIME
 
     def roll_dice(self):
         board = {}
