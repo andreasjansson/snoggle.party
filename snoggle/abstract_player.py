@@ -47,7 +47,6 @@ class AbstractPlayer(object):
 
         px, py = position
         lx, ly = self.last_position
-        print px, py, lx, ly, 'diffs', abs(px - lx) <= 1, abs(py - ly) <= 1
         return abs(px - lx) <= 1 and abs(py - ly) <= 1
 
     def to_visible_dict(self):

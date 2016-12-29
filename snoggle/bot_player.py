@@ -263,6 +263,7 @@ class BotPlayer(AbstractPlayer):
 class BotSelectAction(namedtuple('BotSelectAction', 'x y')):
     pass
 
+
 class BotSubmitAction(object):
     pass
 

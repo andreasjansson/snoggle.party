@@ -31,14 +31,14 @@
           {% for player in players %}
           <li class="player">
             {% if player.is_bot %}🤖 {% endif %}
-            <span style="color: {{ color_map[player.color] }}">{{ player.color }}</span>
+            <span class="player-color" style="color: {{ color_map[player.color] }}">{{ player.color }}</span>
             {% if player.is_bot %}
-            <em><a href="/delete-bot?color={{ player.color }}">Delete bot</a></em>
+            <em><a class="ajax-get" href="/delete-bot?color={{ player.color }}">Delete bot</a></em>
             {% endif %}
           </li>
           {% endfor %}
           <li id="add-bot">
-            🤖 <em><a href="/add-bot">Add bot</a></em>
+            🤖 <em><a class="ajax-get" href="/add-bot">Add bot</a></em>
           </li>
         </ul>
 
@@ -55,19 +55,19 @@
         <p>Turn time seconds</p>
         <div class="options">
           {% for option in [10, 20, 40, 60] %}
-          <a href="/options?turn-time={{ option }}" {% if option == turn_time_total %}class="selected"{% endif %}>{{ option }}</a>
+          <a class="ajax-get{% if option == turn_time_total %} selected{% endif %}" href="/options?turn-time={{ option }}">{{ option }}</a>
           {% endfor %}
         </div>
         <p>Turns per player</p>
         <div class="options">
           {% for option in [1, 2, 3, 4, 5] %}
-          <a href="/options?num-turns={{ option }}" {% if option == num_turns %}class="selected"{% endif  %}>{{ option }}</a>
+          <a class="ajax-get{% if option == num_turns %} selected{% endif  %}" href="/options?num-turns={{ option }}">{{ option }}</a>
           {% endfor %}
         </div>
         <p>Board width</p>
         <div class="options">
           {% for option in [4, 5] %}
-          <a href="/options?board-width={{ option }}" {% if option == board_width %}class="selected"{% endif  %}>{{ option }}</a>
+          <a class="ajax-get{% if option == board_width %} selected{% endif  %}" href="/options?board-width={{ option }}">{{ option }}</a>
           {% endfor %}
         </div>
       </div>

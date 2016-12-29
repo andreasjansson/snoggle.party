@@ -2,6 +2,8 @@ var socket;
 var timer;
 var refreshFrequency = 100;
 var timeLeft = 0;
+var refreshHandler;
+var preloadedImages = [];
 
 function replaceHtml(html, id) {
     var body = '<div id="body-mock">' + html.replace(/^[\s\S]*<body.*?>|<\/body>[\s\S]*$/ig, '') + '</div>';
@@ -15,8 +17,6 @@ function connectSocketIO() {
 }
 
 function handleSelectResponse(data) {
-    console.log(data);
-
     var word = data.word.toUpperCase();
     $('#board').html(data.board_html);
     $('#your-word').text(word);
@@ -44,9 +44,16 @@ function selectLetter(e) {
 }
 
 function handleGameUpdate(data) {
-    console.log('game updated')
     replaceHtml(data.html, 'wrapper');
+    refreshHandler();
+}
+
+function mainRefreshHandler() {
     updateCountdownTime();
+}
+
+function waitRefreshHandler() {
+    preloadLetters(getWaitingColors());
 }
 
 function startCountdown() {
@@ -78,72 +85,93 @@ function handleGameQuit(data) {
     location.href = '/';
 }
 
-function ajaxClick(e) {
+function handleAjaxGetResponse(data) {
+    replaceHtml(data, 'wrapper');
+    refreshHandler();
+}
+
+function ajaxGet(e) {
     e.preventDefault();
 
     var $a = $(e.target).closest('a');
     $('img', $a).addClass('animate-spin');
 
-    $.get($a.attr('href'));
+    $.get($a.attr('href'), handleAjaxGetResponse);
 
     return false;
 }
 
 function preloadImage(url) {
-    var img = new Image();
-    img.src = url;
+    if (preloadedImages.indexOf(url) == -1) {
+        var img = new Image();
+        console.log(url);
+        img.src = url;
+        preloadedImages.push(url);
+    }
 }
 
-
-function preloadAllLetters() {
-    var colors = ['red', 'green', 'purple', 'orange', 'yellow', 'teal'];
+function preloadLetters(colors) {
     var letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
                    'L', 'M', 'N', 'O', 'P', 'Qu', 'R', 'S', 'T', 'U', 'V',
                    'W', 'X', 'Y', 'Z'];
     var folder = '/images/letters-shadow/';
     for (var i = 0; i < letters.length; i ++) {
         var letter = letters[i];
-        preloadImage(folder + letter + '.png');
         for (var j = 0; j < colors.length; j ++) {
             var color = colors[j];
-            preloadImage(folder + letter + '-with-' + color + '.png');
+            if (color == 'NO-COLOR') {
+                preloadImage(folder + letter + '.png');
+            } else {
+                preloadImage(folder + letter + '-with-' + color + '.png');
+            }
         }
     }
 }
 
-function main() {
-    connectSocketIO();
-
-    socket.on('game updated', handleGameUpdate);
-    socket.on('game quit', handleGameQuit);
-
-    $('body').on('touchstart mousedown', '#board button', selectLetter);
-    $('body').on('click', '#controls a', ajaxClick);
-    $('body').on('click', '#next-round', ajaxClick);
-
-    startCountdown();
+function getWaitingColors() {
+    return $('.player-color').map(function(i, el) {
+        return $(el).text();
+    });
 }
 
-function wait() {
-    connectSocketIO();
-
-    socket.on('game quit', handleGameQuit);
-
-    socket.on('game updated', function (data) {
-        replaceHtml(data.html, 'wrapper');
-    });
-    socket.on('start', function () {
-        location.href = '/game';
-    });
-
-    $('body').on('click', '.options a', ajaxClick);
-
-    preloadAllLetters();
+function preloadImages() {
+    var colors = getWaitingColors();
+    console.log('>>>>>>>>>', colors);
+    colors.push('NO-COLOR');
+    preloadLetters(colors);
     preloadImage('/images/blowfish.png');
     preloadImage('/images/shark.png');
     preloadImage('/images/background.jpg');
 }
 
+function commonSetup(refreshHandler_) {
+    refreshHandler = refreshHandler_;
+    connectSocketIO();
+
+    socket.on('game updated', handleGameUpdate);
+    socket.on('game quit', handleGameQuit);
+
+    $('body').on('click', '.ajax-get', ajaxGet);
+}
+
+function main() {
+    commonSetup(mainRefreshHandler);
+
+    $('body').on('touchstart mousedown', '#board button', selectLetter);
+
+    startCountdown();
+}
+
+function wait() {
+    commonSetup(waitRefreshHandler);
+
+    socket.on('start', function () {
+        location.href = '/game';
+    });
+
+    window.setTimeout(preloadImages, 250);
+}
+
 function index() {
-    console.log('here')
+
 }

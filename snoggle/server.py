@@ -3,7 +3,6 @@
 # * make skip button submit
 # * better message/error graphics
 
-from datetime import timedelta
 import random
 import argparse
 from collections import OrderedDict
@@ -12,7 +11,6 @@ from flask import (
     Flask, session, redirect, url_for, request, render_template, jsonify
 )
 from flask_socketio import SocketIO, join_room, leave_room
-import logging
 
 from snoggle.game import Game
 from snoggle.bot_player import BotSelectAction, BotSubmitAction
@@ -30,7 +28,7 @@ COLOR_MAP = OrderedDict((
 app = Flask(__name__, static_url_path='')
 app.secret_key = 'super super secret key'
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 365
-socketio = SocketIO(app) #, logger=True, engineio_logger=True)
+socketio = SocketIO(app, logger=True) #, logger=True, engineio_logger=True)
 games = {}
 
 
@@ -45,44 +43,91 @@ def background_thread():
 socketio.start_background_task(target=background_thread)
 
 
-def require_game(started=True, emit=None, turn=False, playing=False):
+def require_game(f):
+    @wraps(f)
+    def wrapper():
+        if 'game_id' not in session:
+            return redirect(url_for('index'))
+
+        if session['game_id'] not in games:
+            del session['game_id']
+            return redirect(url_for('index'))
+
+        game = games[session['game_id']]
+
+        if game.is_too_old():
+            game.end()
+            del games[game.game_id]
+            return redirect(url_for('index'))
+
+        if session['color'] not in game.players:
+            return redirect(url_for('index'))
+
+        player = game.players[session['color']]
+
+        return f(game, player)
+
+    return wrapper
+
+
+def require_waiting(f):
+    @require_game
+    @wraps(f)
+    def wrapper(game, player):
+        if game.started():
+            return redirect(url_for('main'))
+        return f(game, player)
+    return wrapper
+
+
+def require_started(f):
+    @require_game
+    @wraps(f)
+    def wrapper(game, player):
+        if not game.started():
+            return redirect(url_for('wait'))
+        return f(game, player)
+    return wrapper
+
+
+def require_ended(f):
+    @require_game
+    @wraps(f)
+    def wrapper(game, player):
+        if not game.ended():
+            return redirect(url_for('main'))
+        return f(game, player)
+    return wrapper
+
+
+def require_playing_turn(f):
+    @require_started
+    @wraps(f)
+    def wrapper(game, player):
+        if not game.playing():
+            return redirect(url_for('main'))
+        if game.player_turn() != player:
+            player.error = 'It\'s not your turn!'
+            return redirect(url_for('main'))
+        return f(game, player)
+    return wrapper
+
+
+def broadcast_emit_other_players(template):
     def decorator(f):
         @wraps(f)
-        def wrapper(*args, **kwargs):
-            game = None
+        def wrapper(game, player):
             try:
-                if 'game_id' not in session:
-                    return redirect(url_for('index'))
-                if session['game_id'] not in games:
-                    del session['game_id']
-                    return redirect(url_for('index'))
-                game = games[session['game_id']]
-                if started and not game.started():
-                    return redirect(url_for('wait'))
-                if session['color'] not in game.players:
-                    return redirect(url_for('index'))
-                player = game.players[session['color']]
-
-                if turn and game.player_turn() != player:
-                    player.error = 'It\'s not your turn!'
-                    return redirect(url_for('main'))
-
-                if playing and not game.playing():
-                    player.error = 'Not playing at the moment'
-                    return redirect(url_for('main'))
-
-                return f(game, player, *args, **kwargs)
+                return f(game, player)
             finally:
-                if emit and game:
-                    broadcast_emit_game(game, template=emit)
-
+                other_players_emit_game(game, player, template=template)
         return wrapper
     return decorator
 
 
 def require_game_socket(f):
     @wraps(f)
-    def wrapper(*args, **kwargs):
+    def wrapper():
         if 'game_id' not in session:
             return
         if session['game_id'] not in games:
@@ -91,7 +136,7 @@ def require_game_socket(f):
         player = game.players[session['color']]
         room = player.sid if player.sid else None
 
-        return f(game, player, room, *args, **kwargs)
+        return f(game, player, room)
     return wrapper
 
 
@@ -162,21 +207,17 @@ def join():
 
 
 @app.route('/wait', methods=['GET', 'POST'])
-@require_game(False)
+@require_waiting
 def wait(game, player):
-    if game.started():
-        return redirect(url_for('main'))
-
     state = game_state(game, player)
     return render_template('wait.html', **state)
 
 
 @app.route('/add-bot', methods=['GET', 'POST'])
-@require_game(False)
+@require_waiting
+@broadcast_emit_other_players('wait')
 def add_bot(game, player):
-    if game.started():
-        return redirect(url_for('main'))
-
+    print 'add-bot', game, player
     available_colors = set(COLOR_MAP.keys()) - set(game.players.keys())
     color = random.sample(available_colors, 1)[0]
     game.add_bot(color)
@@ -185,11 +226,9 @@ def add_bot(game, player):
 
 
 @app.route('/delete-bot', methods=['GET', 'POST'])
-@require_game(False)
+@require_waiting
+@broadcast_emit_other_players('wait')
 def delete_bot(game, player):
-    if game.started():
-        return redirect(url_for('main'))
-
     color = request.args['color']
     game.delete_bot(color)
 
@@ -198,7 +237,8 @@ def delete_bot(game, player):
 
 
 @app.route('/options', methods=['GET'])
-@require_game(False, emit='wait')
+@require_waiting
+@broadcast_emit_other_players('wait')
 def options(game, player):
     if game.started():
         return redirect(url_for('main'))
@@ -233,7 +273,7 @@ def options(game, player):
 
 
 @app.route('/start', methods=['GET', 'POST'])
-@require_game(False)
+@require_waiting
 def start(game, player):
     if len(game.players) < 2:
         player.error = 'Need at least two players to play'
@@ -251,7 +291,7 @@ def start(game, player):
 
 
 @app.route('/game', methods=['GET', 'POST'])
-@require_game()
+@require_started
 def main(game, player):
     session['turn_time'] = game.max_turn_time
     session['num_turns'] = game.num_turns
@@ -262,7 +302,7 @@ def main(game, player):
 
 
 @app.route('/select', methods=['POST'])
-@require_game(emit='main', turn=True, playing=True)
+@require_playing_turn
 def select(game, player):
     x, y = request.form['position'].split('|')[1].split(',')
     x, y = int(x), int(y)
@@ -273,7 +313,7 @@ def select(game, player):
 
 
 @app.route('/select-ajax', methods=['POST'])
-@require_game(turn=True, playing=True)
+@require_playing_turn
 def select_ajax(game, player):
     x, y = request.form['position'].split('|')[1].split(',')
     x, y = int(x), int(y)
@@ -290,18 +330,22 @@ def select_ajax(game, player):
 
 
 @app.route('/submit', methods=['GET', 'POST'])
-@require_game(emit='main', turn=True, playing=True)
+@require_playing_turn
 def submit(game, player):
     if len(player.guess if player.is_guessing else player.word) == 0:
         player.error = 'You have\'t made a word yet'
         return redirect(url_for('main'))
 
-    game.check_word_and_guess(player)
+    success = game.check_word_and_guess(player)
+
+    if success:
+        other_players_emit_game(game, player, 'main')
+
     return redirect(url_for('main'))
 
 
 @app.route('/start-guessing')
-@require_game(emit='main', turn=True, playing=True)
+@require_playing_turn
 def start_guessing(game, player):
     player.start_guessing()
 
@@ -309,7 +353,7 @@ def start_guessing(game, player):
 
 
 @app.route('/clear')
-@require_game(emit='main', turn=True, playing=True)
+@require_playing_turn
 def clear(game, player):
     if player.is_guessing:
         player.clear_guess()
@@ -319,23 +363,16 @@ def clear(game, player):
     return redirect(url_for('main'))
 
 
-@app.route('/pass')
-@require_game(emit='main', turn=True, playing=True)
-def pass_turn(game, player):
-    player.clear_word()
-    game.next_turn()
-    return redirect(url_for('main'))
-
-
 @app.route('/next-round')
-@require_game(emit='main')
+@require_ended
+@broadcast_emit_other_players('main')
 def next_round(game, player):
     game.start_round()
     return redirect(url_for('main'))
 
 
 @app.route('/quit')
-@require_game(started=False)
+@require_game
 def quit_game(game, player):
     game.end()
     del games[game.game_id]
@@ -359,13 +396,14 @@ def static_proxy(path):
 def socket_connect(game, player, room):
     join_room(request.sid)
     player.sid = request.sid
+    app.logger.info('socket connected')
 
 
 @socketio.on('disconnect')
 @require_game_socket
 def socket_disconnect(game, player, room):
     leave_room(request.sid)
-    print('Client disconnected')
+    app.logger.info('socket disconnected')
 
 
 def turn_time_out(game):
@@ -375,8 +413,6 @@ def turn_time_out(game):
         game.check_word_and_guess(game.player_turn(), end_of_turn=True)
 
     game.next_turn()
-
-    #print 'turn time out'
 
     with app.app_context():
         broadcast_emit_game(game, 'main')
@@ -389,8 +425,6 @@ def take_bot_action(game, bot):
             return
 
         action = bot.take_action(game.board_view(bot))
-
-        #print 'ACTION', action
 
         if action is None:
             attempt +=1
@@ -414,8 +448,15 @@ def take_bot_action(game, bot):
 def broadcast_emit_game(game, template):
     for p in game.human_players():
         if p.sid:
-            if p.color == 'green':
-                print '>>>>>>>> EMITTING GAME UPDATE'
+            socketio.emit('game updated', {
+                'html': render_template(
+                    '%s.html' % template, **game_state(game, p))
+                }, room=p.sid)
+
+
+def other_players_emit_game(game, player, template):
+    for p in game.human_players():
+        if p.sid and p != player:
             socketio.emit('game updated', {
                 'html': render_template(
                     '%s.html' % template, **game_state(game, p))
