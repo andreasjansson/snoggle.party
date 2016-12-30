@@ -6,4 +6,4 @@
 
 Instructions how to play [here](http://snoggle.party/howto).
 
-![screenshot](https://github.com/andreasjansson/snoggle.party/raw/master/snoggle/static/images/howto5.png)
+![screenshot](https://github.com/andreasjansson/snoggle.party/raw/master/snoggle/static/images/howto5.jpg)
